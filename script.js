@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
+const SUPABASE_KEY = "ТВОЙ_КЛЮЧ";
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -7,9 +7,9 @@ let tg = window.Telegram.WebApp;
 let user = tg.initDataUnsafe?.user;
 
 let userId = user?.id?.toString();
-let startParam = tg.initDataUnsafe?.start_param;
+let username = user?.username || "Игрок";
 
-// ===== ДАННЫЕ =====
+// данные
 let points = 0;
 let strength = 1;
 let agility = 1;
@@ -20,10 +20,7 @@ let lastActionDate = "";
 // ===== ЗАГРУЗКА =====
 async function loadPlayer() {
 
-    if (!userId) {
-        alert("Открой через Telegram");
-        return;
-    }
+    document.getElementById("username").innerText = "@" + username;
 
     let { data } = await client
         .from("players")
@@ -35,13 +32,13 @@ async function loadPlayer() {
 
         await client.from("players").insert({
             id: userId,
+            username: username,
             clan: null,
             points: 0,
             strength: 1,
             agility: 1,
             charisma: 1,
-            last_day: "",
-            ref_by: startParam || null
+            last_day: ""
         });
 
         return loadPlayer();
@@ -64,35 +61,42 @@ function showGame() {
 
     if (!clan) {
         document.getElementById("clanBlock").innerHTML = `
-        <h3>Выбери клан:</h3>
-        <button onclick="selectClan('Авиастрой')">Авиастрой</button><br><br>
-        <button onclick="selectClan('Кировский')">Кировский</button><br><br>
-        <button onclick="selectClan('Московский')">Московский</button>
+        <h3>Выбери район:</h3>
+
+        <button onclick="selectClan('Авиастрой')">✈️ Авиастрой (+ловкость)</button><br><br>
+        <button onclick="selectClan('Кировский')">💪 Кировский (+сила)</button><br><br>
+        <button onclick="selectClan('Московский')">🗣 Московский (+харизма)</button>
         `;
         return;
     }
 
-    document.getElementById("clanBlock").innerHTML = `<h3>Клан: ${clan}</h3>`;
+    document.getElementById("clanBlock").innerHTML = `<h3>Твой район: ${clan}</h3>`;
     updateUI();
 }
 
 function selectClan(c) {
+
     clan = c;
+
+    if (c === "Авиастрой") agility += 2;
+    if (c === "Кировский") strength += 2;
+    if (c === "Московский") charisma += 2;
+
     save();
     showGame();
 }
 
-// ===== ПРОВЕРКА =====
+// ===== ДЕЙСТВИЯ =====
+
 function canPlayToday() {
     let today = new Date().toDateString();
     return lastActionDate !== today;
 }
 
-// ===== ДЕЙСТВИЯ =====
 function mission() {
     if (!canPlayToday()) return alert("Уже играл сегодня");
 
-    let reward = Math.floor(Math.random() * 15) + 10;
+    let reward = 10 + Math.floor(Math.random() * agility);
 
     points += reward;
     agility += 1;
@@ -107,7 +111,7 @@ function mission() {
 function attack() {
     if (!canPlayToday()) return alert("Уже играл сегодня");
 
-    let reward = 10 + strength * Math.floor(Math.random() * 3 + 1);
+    let reward = 10 + strength;
 
     points += reward;
     strength += 1;
@@ -134,16 +138,17 @@ function activity() {
 
 // ===== ТОП =====
 async function leaderboard() {
+
     let { data } = await client
         .from("players")
         .select("*")
         .order("points", { ascending: false })
         .limit(10);
 
-    let text = "🏆 ТОП\n\n";
+    let text = "🏆 ТОП ИГРОКОВ\n\n";
 
     data.forEach((p, i) => {
-        text += `${i + 1}. ${p.points}\n`;
+        text += `${i+1}. @${p.username} — ${p.points}\n`;
     });
 
     alert(text);
@@ -162,6 +167,7 @@ async function save() {
     await client
         .from("players")
         .update({
+            username,
             points,
             strength,
             agility,
@@ -172,11 +178,4 @@ async function save() {
         .eq("id", userId);
 }
 
-// ===== ЭФФЕКТ =====
-function clickEffect(btn) {
-    btn.style.transform = "scale(0.95)";
-    setTimeout(() => btn.style.transform = "scale(1)", 100);
-}
-
-// ===== СТАРТ =====
 loadPlayer();
