@@ -1,28 +1,71 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Kazan Clans</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Казанские Кланы</title>
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; }
+        .stat-card { border: 1px solid #444; padding: 20px; margin: 10px; border-radius: 10px; }
+        button { background: #ffcc00; border: none; padding: 15px 30px; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        button:disabled { background: #555; }
+    </style>
 </head>
+<body>
 
-<body style="background:#0f172a; color:white; font-family:sans-serif; text-align:center;">
+    <h1>🏙 Герой района</h1>
+    
+    <div class="stat-card">
+        <p>Твой район: <span id="clan-display">Не выбран</span></p>
+        <p>Очки: <b id="points-display">0</b></p>
+        <p>Ловкость: <b id="agility-display">1</b></p>
+    </div>
 
-<h1>🏙 Казанские кланы</h1>
+    <button id="mission-btn" onclick="doMission()">🗡 Выполнить миссию</button>
 
-<div id="clanBlock"></div>
+    <script>
+        const SUPABASE_URL = https://skutxvoapgcgxrsnxqig.supabase.co;
+        const SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNrdXR4dm9hcGdjZ3hyc254cWlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUzOTQ4MzUsImV4cCI6MjA5MDk3MDgzNX0.erZ9JQ5c6rc9IO0ep48d6LKV1oUkd8USdUgyvSkZ9zk;
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<h2 id="points">Очки: 0</h2>
+        const userId = 12345678; 
 
-<h3>💪 Сила: <span id="strength">1</span></h3>
-<h3>🏃 Ловкость: <span id="agility">1</span></h3>
-<h3>🗣 Харизма: <span id="charisma">1</span></h3>
+        async function doMission() {
+            const btn = document.getElementById('mission-btn');
+            btn.disabled = true;
 
-<br>
+            const today = new Date().toISOString().split('T')[0];
 
-<button onclick="mission()" style="padding:15px; font-size:18px;">🗡 Миссия</button>
+            let { data: player } = await supabase.from('players').select('*').eq('user_id', userId).single();
 
-<script src="script.js"></script>
+            if (player && player.last_mission === today) {
+                alert("❌ Приходи завтра! Силы района восстанавливаются.");
+                btn.disabled = false;
+                return;
+            }
 
+            const reward = Math.floor(Math.random() * 16) + 10;
+            const newPoints = (player ? player.points : 0) + reward;
+            const newAgility = (player ? player.agility : 1) + 1;
+
+            const { error } = await supabase.from('players').upsert({
+                user_id: userId,
+                points: newPoints,
+                agility: newAgility,
+                last_mission: today,
+                clan: 'Вахитовский'
+            });
+
+            if (!error) {
+                alert(`✅ Успех! +${reward} очков!`);
+                updateUI(newPoints, newAgility);
+            }
+            btn.disabled = false;
+        }
+
+        function updateUI(p, a) {
+            document.getElementById('points-display').innerText = p;
+            document.getElementById('agility-display').innerText = a;
+        }
+    </script>
 </body>
 </html>
