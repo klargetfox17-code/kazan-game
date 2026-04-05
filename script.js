@@ -22,38 +22,57 @@ async function loadPlayer() {
 
     document.getElementById("username").innerText = "@" + username;
 
-    let { data } = await client
-        .from("players")
-        .select("*")
-        .eq("id", userId)
-        .single();
+    try {
 
-    if (!data) {
+        let { data, error } = await client
+            .from("players")
+            .select("*")
+            .eq("id", userId)
+            .maybeSingle();
 
-        await client.from("players").insert({
-            id: userId,
-            username: username,
-            clan: null,
-            points: 0,
-            strength: 1,
-            agility: 1,
-            charisma: 1,
-            last_day: ""
-        });
+        if (error) {
+            console.log("Ошибка загрузки:", error);
+        }
 
-        return loadPlayer();
+        // если нет игрока → создаём
+        if (!data) {
+
+            let { error: insertError } = await client
+                .from("players")
+                .insert({
+                    id: userId,
+                    username: username,
+                    clan: null,
+                    points: 0,
+                    strength: 1,
+                    agility: 1,
+                    charisma: 1,
+                    last_day: ""
+                });
+
+            if (insertError) {
+                console.log("Ошибка создания:", insertError);
+                showGame(); // хотя бы UI покажем
+                return;
+            }
+
+            return loadPlayer();
+        }
+
+        // если есть — загружаем
+        clan = data.clan;
+        points = data.points ?? 0;
+        strength = data.strength ?? 1;
+        agility = data.agility ?? 1;
+        charisma = data.charisma ?? 1;
+        lastActionDate = data.last_day ?? "";
+
+        showGame();
+
+    } catch (e) {
+        console.log("Крит ошибка:", e);
+        showGame();
     }
-
-    clan = data.clan;
-    points = data.points;
-    strength = data.strength;
-    agility = data.agility;
-    charisma = data.charisma;
-    lastActionDate = data.last_day;
-
-    showGame();
-
-    document.getElementById("loading").style.display = "none";
 }
 
 // ===== UI =====
@@ -63,17 +82,21 @@ function showGame() {
         document.getElementById("clanBlock").innerHTML = `
         <h3>Выбери район:</h3>
 
-        <button onclick="selectClan('Авиастрой')">✈️ Авиастрой (+ловкость)</button><br><br>
-        <button onclick="selectClan('Кировский')">💪 Кировский (+сила)</button><br><br>
-        <button onclick="selectClan('Московский')">🗣 Московский (+харизма)</button>
+        <button onclick="selectClan('Авиастрой')">✈️ Авиастрой (+2 ловкость)</button><br><br>
+        <button onclick="selectClan('Кировский')">💪 Кировский (+2 сила)</button><br><br>
+        <button onclick="selectClan('Московский')">🗣 Московский (+2 харизма)</button>
         `;
+        updateUI();
         return;
     }
 
-    document.getElementById("clanBlock").innerHTML = `<h3>Твой район: ${clan}</h3>`;
+    document.getElementById("clanBlock").innerHTML =
+        `<h3>Твой район: ${clan}</h3>`;
+
     updateUI();
 }
 
+// ===== ВЫБОР КЛАНА =====
 function selectClan(c) {
 
     clan = c;
@@ -86,13 +109,13 @@ function selectClan(c) {
     showGame();
 }
 
-// ===== ДЕЙСТВИЯ =====
-
+// ===== ПРОВЕРКА =====
 function canPlayToday() {
     let today = new Date().toDateString();
     return lastActionDate !== today;
 }
 
+// ===== ДЕЙСТВИЯ =====
 function mission() {
     if (!canPlayToday()) return alert("Уже играл сегодня");
 
@@ -139,19 +162,35 @@ function activity() {
 // ===== ТОП =====
 async function leaderboard() {
 
-    let { data } = await client
-        .from("players")
-        .select("*")
-        .order("points", { ascending: false })
-        .limit(10);
+    try {
 
-    let text = "🏆 ТОП ИГРОКОВ\n\n";
+        let { data, error } = await client
+            .from("players")
+            .select("*")
+            .order("points", { ascending: false })
+            .limit(10);
 
-    data.forEach((p, i) => {
-        text += `${i+1}. @${p.username} — ${p.points}\n`;
-    });
+        if (error) {
+            alert("Ошибка загрузки топа");
+            return;
+        }
 
-    alert(text);
+        if (!data || data.length === 0) {
+            alert("Пока нет игроков");
+            return;
+        }
+
+        let text = "🏆 ТОП ИГРОКОВ\n\n";
+
+        data.forEach((p, i) => {
+            text += `${i+1}. @${p.username} — ${p.points} (${p.clan || "без клана"})\n`;
+        });
+
+        alert(text);
+
+    } catch (e) {
+        alert("Ошибка");
+    }
 }
 
 // ===== UI =====
@@ -164,18 +203,25 @@ function updateUI() {
 
 // ===== SAVE =====
 async function save() {
-    await client
-        .from("players")
-        .update({
-            username,
-            points,
-            strength,
-            agility,
-            charisma,
-            last_day: lastActionDate,
-            clan
-        })
-        .eq("id", userId);
+
+    try {
+        await client
+            .from("players")
+            .update({
+                username,
+                points,
+                strength,
+                agility,
+                charisma,
+                last_day: lastActionDate,
+                clan
+            })
+            .eq("id", userId);
+
+    } catch (e) {
+        console.log("Ошибка сохранения");
+    }
 }
 
+// ===== СТАРТ =====
 loadPlayer();
