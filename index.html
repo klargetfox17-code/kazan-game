@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <meta charset="UTF-8">
   <title>Kazan Clans</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 
 <body style="background:#0f172a; color:white; font-family:sans-serif; text-align:center;">
 
 <h1>🏙 Казанские кланы</h1>
+
+<div id="loading">Загрузка...</div>
 
 <div id="clanBlock"></div>
 
@@ -18,16 +21,16 @@
 </div>
 
 <div style="background:#1e293b; padding:10px; border-radius:10px;">
-  <p>💪 <span id="strength"></span></p>
-  <p>🏃 <span id="agility"></span></p>
-  <p>🗣 <span id="charisma"></span></p>
+  <p>💪 <span id="strength">...</span></p>
+  <p>🏃 <span id="agility">...</span></p>
+  <p>🗣 <span id="charisma">...</span></p>
 </div>
 
 <br>
 
-<button onclick="clickEffect(this); mission()" style="width:90%; padding:15px; margin:5px;">🗡 Миссия</button>
-<button onclick="clickEffect(this); attack()" style="width:90%; padding:15px; margin:5px;">💣 Пакость</button>
-<button onclick="clickEffect(this); activity()" style="width:90%; padding:15px; margin:5px;">🎉 Активность</button>
+<button onclick="clickEffect(this); mission()" style="width:90%; padding:15px;">🗡 Миссия</button>
+<button onclick="clickEffect(this); attack()" style="width:90%; padding:15px;">💣 Пакость</button>
+<button onclick="clickEffect(this); activity()" style="width:90%; padding:15px;">🎉 Активность</button>
 <button onclick="leaderboard()">🏆 Топ</button>
 
 <script src="script.js"></script>

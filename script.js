@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
-const SUPABASE_KEY = "ТВОЙ_КЛЮЧ";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -17,12 +17,11 @@ let charisma = 1;
 let clan = null;
 let lastActionDate = "";
 
-// ===== ЗАГРУЗКА ИГРОКА =====
-
+// ===== ЗАГРУЗКА =====
 async function loadPlayer() {
 
     if (!userId) {
-        alert("Открой игру через Telegram");
+        alert("Открой через Telegram");
         return;
     }
 
@@ -32,7 +31,6 @@ async function loadPlayer() {
         .eq("id", userId)
         .single();
 
-    // ЕСЛИ НЕТ ИГРОКА — СОЗДАЁМ
     if (!data) {
 
         await client.from("players").insert({
@@ -46,28 +44,9 @@ async function loadPlayer() {
             ref_by: startParam || null
         });
 
-        // бонус рефералу
-        if (startParam) {
-            let { data: refUser } = await client
-                .from("players")
-                .select("points")
-                .eq("id", startParam)
-                .single();
-
-            if (refUser) {
-                await client
-                    .from("players")
-                    .update({
-                        points: refUser.points + 20
-                    })
-                    .eq("id", startParam);
-            }
-        }
-
         return loadPlayer();
     }
 
-    // ЕСЛИ ЕСТЬ — ЗАГРУЖАЕМ
     clan = data.clan;
     points = data.points;
     strength = data.strength;
@@ -76,10 +55,11 @@ async function loadPlayer() {
     lastActionDate = data.last_day;
 
     showGame();
+
+    document.getElementById("loading").style.display = "none";
 }
 
 // ===== UI =====
-
 function showGame() {
 
     if (!clan) {
@@ -102,20 +82,15 @@ function selectClan(c) {
     showGame();
 }
 
-// ===== ПРОВЕРКА ДНЯ =====
-
+// ===== ПРОВЕРКА =====
 function canPlayToday() {
     let today = new Date().toDateString();
     return lastActionDate !== today;
 }
 
 // ===== ДЕЙСТВИЯ =====
-
 function mission() {
-    if (!canPlayToday()) {
-        alert("Ты уже сделал действие сегодня");
-        return;
-    }
+    if (!canPlayToday()) return alert("Уже играл сегодня");
 
     let reward = Math.floor(Math.random() * 15) + 10;
 
@@ -126,14 +101,11 @@ function mission() {
     save();
     updateUI();
 
-    alert("Миссия: +" + reward);
+    alert("Миссия +" + reward);
 }
 
 function attack() {
-    if (!canPlayToday()) {
-        alert("Ты уже сделал действие сегодня");
-        return;
-    }
+    if (!canPlayToday()) return alert("Уже играл сегодня");
 
     let reward = 10 + strength * Math.floor(Math.random() * 3 + 1);
 
@@ -144,14 +116,11 @@ function attack() {
     save();
     updateUI();
 
-    alert("Пакость: +" + reward);
+    alert("Пакость +" + reward);
 }
 
 function activity() {
-    if (!canPlayToday()) {
-        alert("Ты уже сделал действие сегодня");
-        return;
-    }
+    if (!canPlayToday()) return alert("Уже играл сегодня");
 
     points += 12;
     charisma += 1;
@@ -160,11 +129,10 @@ function activity() {
     save();
     updateUI();
 
-    alert("Активность: +12");
+    alert("Активность +12");
 }
 
 // ===== ТОП =====
-
 async function leaderboard() {
     let { data } = await client
         .from("players")
@@ -182,7 +150,6 @@ async function leaderboard() {
 }
 
 // ===== UI =====
-
 function updateUI() {
     document.getElementById("points").innerText = "Очки: " + points;
     document.getElementById("strength").innerText = strength;
@@ -191,7 +158,6 @@ function updateUI() {
 }
 
 // ===== SAVE =====
-
 async function save() {
     await client
         .from("players")
@@ -207,12 +173,10 @@ async function save() {
 }
 
 // ===== ЭФФЕКТ =====
-
 function clickEffect(btn) {
     btn.style.transform = "scale(0.95)";
     setTimeout(() => btn.style.transform = "scale(1)", 100);
 }
 
-// ===== ЗАПУСК =====
-
+// ===== СТАРТ =====
 loadPlayer();
