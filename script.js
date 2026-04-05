@@ -39,11 +39,12 @@ async function loadPlayer() {
             return;
         }
 
-        if (!data) {
-            console.log("Создаю игрока...");
-            let { error: insertError } = await client
+         if (!data) {
+            alert("Игрока нет. Пытаюсь создать ID: " + userId);
+            
+            let { data: newRow, error: insertError } = await client
                 .from("players")
-                .insert({
+                .insert([{ // Добавляем квадратные скобки [ ] вокруг объекта
                     id: userId,
                     username: username,
                     clan: null,
@@ -52,15 +53,16 @@ async function loadPlayer() {
                     agility: 1,
                     charisma: 1,
                     last_day: ""
-                });
+                }])
+                .select(); // Добавляем .select(), чтобы увидеть результат вставки
 
             if (insertError) {
-                console.error("Ошибка вставки:", insertError.message);
-                alert("Ошибка БД при создании: " + insertError.message);
+                alert("Ошибка вставки: " + JSON.stringify(insertError));
                 return;
             }
-            // Вместо повторного вызова функции — перезагрузка
-            location.reload(); 
+
+            alert("Успех! Игрок в базе: " + JSON.stringify(newRow));
+            location.reload();
             return;
         }
 
