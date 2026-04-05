@@ -1,4 +1,13 @@
+const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let tg = window.Telegram.WebApp;
+let user = tg.initDataUnsafe?.user;
+
+let userId = user?.id?.toString();
+let startParam = tg.initDataUnsafe?.start_param;
 
 // ===== ДАННЫЕ =====
 let points = parseInt(localStorage.getItem("points")) || 0;
@@ -22,6 +31,66 @@ if (!clan) {
 }
 
 // ===== ФУНКЦИИ =====
+
+async function leaderboard() {
+    let { data } = await supabase
+        .from("players")
+        .select("*")
+        .order("points", { ascending: false })
+        .limit(10);
+
+    let text = "🏆 ТОП ИГРОКОВ\n\n";
+
+    data.forEach((p, i) => {
+        text += `${i+1}. ${p.points} очков\n`;
+    });
+
+    alert(text);
+}
+
+async function loadPlayer() {
+
+    let { data } = await supabase
+        .from("players")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+    if (!data) {
+        // создаём нового игрока
+        await supabase.from("players").insert({
+            id: userId,
+            clan: null,
+            points: 0,
+            strength: 1,
+            agility: 1,
+            charisma: 1,
+            last_day: ""
+            ref_by: startParam || null
+        });
+
+    if (startParam) {
+        await supabase
+            .from("players")
+            .update({
+                points: supabase.raw("points + 20")
+        })
+        .eq("id", startParam);
+}
+
+        return loadPlayer();
+    }
+
+    // записываем в переменные
+    clan = data.clan;
+    points = data.points;
+    strength = data.strength;
+    agility = data.agility;
+    charisma = data.charisma;
+    lastActionDate = data.last_day;
+
+    showGame();
+}
 
 function selectClan(c) {
     clan = c;
@@ -65,6 +134,11 @@ function mission() {
 
 // ===== UI =====
 
+function clickEffect(btn) {
+    btn.style.transform = "scale(0.95)";
+    setTimeout(() => btn.style.transform = "scale(1)", 100);
+}
+
 function updateUI() {
     document.getElementById("points").innerText = "Очки: " + points;
     document.getElementById("strength").innerText = strength;
@@ -78,13 +152,20 @@ function updateUI() {
 
 // ===== SAVE =====
 
-function save() {
-    localStorage.setItem("points", points);
-    localStorage.setItem("strength", strength);
-    localStorage.setItem("agility", agility);
-    localStorage.setItem("charisma", charisma);
-    localStorage.setItem("lastActionDate", lastActionDate);
+async function save() {
+    await supabase
+        .from("players")
+        .update({
+            points,
+            strength,
+            agility,
+            charisma,
+            last_day: lastActionDate,
+            clan
+        })
+        .eq("id", userId);
 }
+
 // ===== ПАКОСТЬ =====
 
 function attack() {
@@ -128,3 +209,5 @@ function activity() {
 
     alert("Активность выполнена!\n+" + reward + " очков\n+1 харизма");
 }
+
+loadPlayer();
