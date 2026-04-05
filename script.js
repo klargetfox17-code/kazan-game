@@ -85,3 +85,46 @@ function save() {
     localStorage.setItem("charisma", charisma);
     localStorage.setItem("lastActionDate", lastActionDate);
 }
+// ===== ПАКОСТЬ =====
+
+function attack() {
+
+    if (!canPlayToday()) {
+        alert("Ты уже сделал действие сегодня");
+        return;
+    }
+
+    let reward = 10 + strength * Math.floor(Math.random() * 3 + 1);
+
+    points += reward;
+    strength += 1;
+
+    lastActionDate = new Date().toDateString();
+
+    save();
+    updateUI();
+
+    alert("Пакость удалась!\n+" + reward + " очков\n+1 сила");
+}
+
+// ===== АКТИВНОСТЬ =====
+
+function activity() {
+
+    if (!canPlayToday()) {
+        alert("Ты уже сделал действие сегодня");
+        return;
+    }
+
+    let reward = 12;
+
+    points += reward;
+    charisma += 1;
+
+    lastActionDate = new Date().toDateString();
+
+    save();
+    updateUI();
+
+    alert("Активность выполнена!\n+" + reward + " очков\n+1 харизма");
+}
