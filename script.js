@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
+const SUPABASE_KEY = "ТВОЙ_КЛЮЧ";
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -10,58 +10,31 @@ let userId = user?.id?.toString();
 let startParam = tg.initDataUnsafe?.start_param;
 
 // ===== ДАННЫЕ =====
-let points = parseInt(localStorage.getItem("points")) || 0;
-let strength = parseInt(localStorage.getItem("strength")) || 1;
-let agility = parseInt(localStorage.getItem("agility")) || 1;
-let charisma = parseInt(localStorage.getItem("charisma")) || 1;
-let clan = localStorage.getItem("clan");
+let points = 0;
+let strength = 1;
+let agility = 1;
+let charisma = 1;
+let clan = null;
+let lastActionDate = "";
 
-let lastActionDate = localStorage.getItem("lastActionDate");
-
-// ===== ВЫБОР КЛАНА =====
-if (!clan) {
-    document.getElementById("clanBlock").innerHTML = `
-    <h3>Выбери клан:</h3>
-    <button onclick="selectClan('Авиастрой')">Авиастрой</button><br><br>
-    <button onclick="selectClan('Кировский')">Кировский</button><br><br>
-    <button onclick="selectClan('Московский')">Московский</button>
-    `;
-} else {
-    showGame();
-}
-
-// ===== ФУНКЦИИ =====
-
-async function leaderboard() {
-    let { data } = await client
-        .from("players")
-        .select("*")
-        .order("points", { ascending: false })
-        .limit(10);
-
-    let text = "🏆 ТОП ИГРОКОВ\n\n";
-
-    data.forEach((p, i) => {
-        text += `${i+1}. ${p.points} очков\n`;
-    });
-
-    alert(text);
-}
+// ===== ЗАГРУЗКА ИГРОКА =====
 
 async function loadPlayer() {
 
-if (!userId) {
-    alert("Открой игру через Telegram");
-    return;
-}
+    if (!userId) {
+        alert("Открой игру через Telegram");
+        return;
+    }
+
     let { data } = await client
         .from("players")
         .select("*")
         .eq("id", userId)
         .single();
 
+    // ЕСЛИ НЕТ ИГРОКА — СОЗДАЁМ
     if (!data) {
-        // создаём нового игрока
+
         await client.from("players").insert({
             id: userId,
             clan: null,
@@ -73,26 +46,28 @@ if (!userId) {
             ref_by: startParam || null
         });
 
-    if (startParam) {
-        let { data: refUser } = await client
-    .from("players")
-    .select("points")
-    .eq("id", startParam)
-    .single();
+        // бонус рефералу
+        if (startParam) {
+            let { data: refUser } = await client
+                .from("players")
+                .select("points")
+                .eq("id", startParam)
+                .single();
 
-if (refUser) {
-    await client
-        .from("players")
-        .update({
-            points: refUser.points + 20
-        })
-        .eq("id", startParam);
-}
+            if (refUser) {
+                await client
+                    .from("players")
+                    .update({
+                        points: refUser.points + 20
+                    })
+                    .eq("id", startParam);
+            }
+        }
 
         return loadPlayer();
     }
 
-    // записываем в переменные
+    // ЕСЛИ ЕСТЬ — ЗАГРУЖАЕМ
     clan = data.clan;
     points = data.points;
     strength = data.strength;
@@ -103,15 +78,28 @@ if (refUser) {
     showGame();
 }
 
-function selectClan(c) {
-    clan = c;
-    localStorage.setItem("clan", clan);
-    showGame();
-}
+// ===== UI =====
 
 function showGame() {
+
+    if (!clan) {
+        document.getElementById("clanBlock").innerHTML = `
+        <h3>Выбери клан:</h3>
+        <button onclick="selectClan('Авиастрой')">Авиастрой</button><br><br>
+        <button onclick="selectClan('Кировский')">Кировский</button><br><br>
+        <button onclick="selectClan('Московский')">Московский</button>
+        `;
+        return;
+    }
+
     document.getElementById("clanBlock").innerHTML = `<h3>Клан: ${clan}</h3>`;
     updateUI();
+}
+
+function selectClan(c) {
+    clan = c;
+    save();
+    showGame();
 }
 
 // ===== ПРОВЕРКА ДНЯ =====
@@ -121,12 +109,11 @@ function canPlayToday() {
     return lastActionDate !== today;
 }
 
-// ===== МИССИЯ =====
+// ===== ДЕЙСТВИЯ =====
 
 function mission() {
-
     if (!canPlayToday()) {
-        alert("Ты уже сделал действие сегодня. Приходи завтра!");
+        alert("Ты уже сделал действие сегодня");
         return;
     }
 
@@ -134,21 +121,67 @@ function mission() {
 
     points += reward;
     agility += 1;
-
     lastActionDate = new Date().toDateString();
 
     save();
     updateUI();
 
-    alert("Миссия выполнена!\n+" + reward + " очков\n+1 ловкость");
+    alert("Миссия: +" + reward);
+}
+
+function attack() {
+    if (!canPlayToday()) {
+        alert("Ты уже сделал действие сегодня");
+        return;
+    }
+
+    let reward = 10 + strength * Math.floor(Math.random() * 3 + 1);
+
+    points += reward;
+    strength += 1;
+    lastActionDate = new Date().toDateString();
+
+    save();
+    updateUI();
+
+    alert("Пакость: +" + reward);
+}
+
+function activity() {
+    if (!canPlayToday()) {
+        alert("Ты уже сделал действие сегодня");
+        return;
+    }
+
+    points += 12;
+    charisma += 1;
+    lastActionDate = new Date().toDateString();
+
+    save();
+    updateUI();
+
+    alert("Активность: +12");
+}
+
+// ===== ТОП =====
+
+async function leaderboard() {
+    let { data } = await client
+        .from("players")
+        .select("*")
+        .order("points", { ascending: false })
+        .limit(10);
+
+    let text = "🏆 ТОП\n\n";
+
+    data.forEach((p, i) => {
+        text += `${i + 1}. ${p.points}\n`;
+    });
+
+    alert(text);
 }
 
 // ===== UI =====
-
-function clickEffect(btn) {
-    btn.style.transform = "scale(0.95)";
-    setTimeout(() => btn.style.transform = "scale(1)", 100);
-}
 
 function updateUI() {
     document.getElementById("points").innerText = "Очки: " + points;
@@ -173,48 +206,13 @@ async function save() {
         .eq("id", userId);
 }
 
-// ===== ПАКОСТЬ =====
+// ===== ЭФФЕКТ =====
 
-function attack() {
-
-    if (!canPlayToday()) {
-        alert("Ты уже сделал действие сегодня");
-        return;
-    }
-
-    let reward = 10 + strength * Math.floor(Math.random() * 3 + 1);
-
-    points += reward;
-    strength += 1;
-
-    lastActionDate = new Date().toDateString();
-
-    save();
-    updateUI();
-
-    alert("Пакость удалась!\n+" + reward + " очков\n+1 сила");
+function clickEffect(btn) {
+    btn.style.transform = "scale(0.95)";
+    setTimeout(() => btn.style.transform = "scale(1)", 100);
 }
 
-// ===== АКТИВНОСТЬ =====
-
-function activity() {
-
-    if (!canPlayToday()) {
-        alert("Ты уже сделал действие сегодня");
-        return;
-    }
-
-    let reward = 12;
-
-    points += reward;
-    charisma += 1;
-
-    lastActionDate = new Date().toDateString();
-
-    save();
-    updateUI();
-
-    alert("Активность выполнена!\n+" + reward + " очков\n+1 харизма");
-}
+// ===== ЗАПУСК =====
 
 loadPlayer();
