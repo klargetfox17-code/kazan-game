@@ -56,7 +56,7 @@ async function loadPlayer() {
                 return;
             }
 
-            return loadPlayer();
+            location.reload();
         }
 
         // если есть — загружаем
