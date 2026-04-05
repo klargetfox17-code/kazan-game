@@ -1,0 +1,6 @@
+let points = 0;
+
+function doMission() {
+    points += 10;
+    document.getElementById("points").innerText = "Очки: " + points;
+}

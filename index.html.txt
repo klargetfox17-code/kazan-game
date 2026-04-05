@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Kazan Clans</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body style="background:#111; color:white; text-align:center; font-family:sans-serif;">
+
+<h1>🏙 Казанские кланы</h1>
+
+<p id="points">Очки: 0</p>
+
+<button onclick="doMission()" style="padding:15px; font-size:18px;">
+🗡 Миссия
+</button>
+
+<script src="script.js"></script>
+
+</body>
+</html>
