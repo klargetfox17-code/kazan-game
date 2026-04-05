@@ -1,13 +1,15 @@
 let tg = window.Telegram.WebApp;
 
-// ====== ЗАГРУЗКА ДАННЫХ ======
+// ===== ДАННЫЕ =====
 let points = parseInt(localStorage.getItem("points")) || 0;
 let strength = parseInt(localStorage.getItem("strength")) || 1;
 let agility = parseInt(localStorage.getItem("agility")) || 1;
 let charisma = parseInt(localStorage.getItem("charisma")) || 1;
 let clan = localStorage.getItem("clan");
 
-// ====== ВЫБОР КЛАНА ======
+let lastActionDate = localStorage.getItem("lastActionDate");
+
+// ===== ВЫБОР КЛАНА =====
 if (!clan) {
     document.getElementById("clanBlock").innerHTML = `
     <h3>Выбери клан:</h3>
@@ -19,7 +21,7 @@ if (!clan) {
     showGame();
 }
 
-// ====== ФУНКЦИИ ======
+// ===== ФУНКЦИИ =====
 
 function selectClan(c) {
     clan = c;
@@ -32,11 +34,28 @@ function showGame() {
     updateUI();
 }
 
+// ===== ПРОВЕРКА ДНЯ =====
+
+function canPlayToday() {
+    let today = new Date().toDateString();
+    return lastActionDate !== today;
+}
+
+// ===== МИССИЯ =====
+
 function mission() {
+
+    if (!canPlayToday()) {
+        alert("Ты уже сделал действие сегодня. Приходи завтра!");
+        return;
+    }
+
     let reward = Math.floor(Math.random() * 15) + 10;
 
     points += reward;
     agility += 1;
+
+    lastActionDate = new Date().toDateString();
 
     save();
     updateUI();
@@ -44,38 +63,25 @@ function mission() {
     alert("Миссия выполнена!\n+" + reward + " очков\n+1 ловкость");
 }
 
+// ===== UI =====
+
 function updateUI() {
     document.getElementById("points").innerText = "Очки: " + points;
     document.getElementById("strength").innerText = strength;
     document.getElementById("agility").innerText = agility;
     document.getElementById("charisma").innerText = charisma;
+
+    if (!canPlayToday()) {
+        document.querySelector("button").innerText = "⏳ Уже сыграно сегодня";
+    }
 }
+
+// ===== SAVE =====
 
 function save() {
     localStorage.setItem("points", points);
     localStorage.setItem("strength", strength);
     localStorage.setItem("agility", agility);
     localStorage.setItem("charisma", charisma);
-}
-function performMission() {
-    const lastActionDate = localStorage.getItem('lastActionDate');
-    const today = new Date().toDateString();
-
-    if (lastActionDate === today) {
-        alert("❌ Ты уже выполнил миссию сегодня! Приходи завтра.");
-        return;
-    }
-
-    let agility = parseInt(localStorage.getItem('agility')) || 1;
-    let points = parseInt(localStorage.getItem('points')) || 0;
-    
-    let reward = Math.floor(Math.random() * (25 - 10 + 1)) + 10;
-    points += reward;
-    agility += 1;
-
-    localStorage.setItem('points', points);
-    localStorage.setItem('agility', agility);
-    localStorage.setItem('lastActionDate', today);
-    updateUI();
-    alert(`✅ Миссия выполнена! +${reward} очков и +1 ловкость.`);
+    localStorage.setItem("lastActionDate", lastActionDate);
 }
