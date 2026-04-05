@@ -19,15 +19,11 @@ let lastActionDate = "";
 
 // ===== ЗАГРУЗКА =====
 async function loadPlayer() {
-    // Проверка: открыто ли в ТГ
-    if (!userId) {
-        document.getElementById("username").innerText = "Открой в Telegram";
-        return; 
-    }
 
     document.getElementById("username").innerText = "@" + username;
 
     try {
+
         let { data, error } = await client
             .from("players")
             .select("*")
@@ -35,16 +31,15 @@ async function loadPlayer() {
             .maybeSingle();
 
         if (error) {
-            console.error("Ошибка запроса:", error.message);
-            return;
+            console.log("Ошибка загрузки:", error);
         }
 
-         if (!data) {
-            alert("Игрока нет. Пытаюсь создать ID: " + userId);
-            
-            let { data: newRow, error: insertError } = await client
+        // если нет игрока → создаём
+        if (!data) {
+
+            let { error: insertError } = await client
                 .from("players")
-                .insert([{ // Добавляем квадратные скобки [ ] вокруг объекта
+                .insert({
                     id: userId,
                     username: username,
                     clan: null,
@@ -53,31 +48,30 @@ async function loadPlayer() {
                     agility: 1,
                     charisma: 1,
                     last_day: ""
-                }])
-                .select(); // Добавляем .select(), чтобы увидеть результат вставки
+                });
 
             if (insertError) {
-                alert("Ошибка вставки: " + JSON.stringify(insertError));
+                console.log("Ошибка создания:", insertError);
+                showGame(); // хотя бы UI покажем
                 return;
             }
 
-            alert("Успех! Игрок в базе: " + JSON.stringify(newRow));
-            location.reload();
-            return;
+            return loadPlayer();
         }
 
-        // Загрузка данных
+        // если есть — загружаем
         clan = data.clan;
-        points = data.points || 0;
-        strength = data.strength || 1;
-        agility = data.agility || 1;
-        charisma = data.charisma || 1;
-        lastActionDate = data.last_day || "";
+        points = data.points ?? 0;
+        strength = data.strength ?? 1;
+        agility = data.agility ?? 1;
+        charisma = data.charisma ?? 1;
+        lastActionDate = data.last_day ?? "";
 
         showGame();
 
     } catch (e) {
-        console.error("Критический сбой:", e);
+        console.log("Крит ошибка:", e);
+        showGame();
     }
 }
 
