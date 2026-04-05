@@ -1,7 +1,7 @@
 const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let tg = window.Telegram.WebApp;
 let user = tg.initDataUnsafe?.user;
@@ -33,7 +33,7 @@ if (!clan) {
 // ===== ФУНКЦИИ =====
 
 async function leaderboard() {
-    let { data } = await supabase
+    let { data } = await client
         .from("players")
         .select("*")
         .order("points", { ascending: false })
@@ -50,7 +50,11 @@ async function leaderboard() {
 
 async function loadPlayer() {
 
-    let { data } = await supabase
+if (!userId) {
+    alert("Открой игру через Telegram");
+    return;
+}
+    let { data } = await client
         .from("players")
         .select("*")
         .eq("id", userId)
@@ -58,22 +62,29 @@ async function loadPlayer() {
 
     if (!data) {
         // создаём нового игрока
-        await supabase.from("players").insert({
+        await client.from("players").insert({
             id: userId,
             clan: null,
             points: 0,
             strength: 1,
             agility: 1,
             charisma: 1,
-            last_day: ""
+            last_day: "",
             ref_by: startParam || null
         });
 
     if (startParam) {
-        await supabase
-            .from("players")
-            .update({
-                points: supabase.raw("points + 20")
+        let { data: refUser } = await client
+    .from("players")
+    .select("points")
+    .eq("id", startParam)
+    .single();
+
+if (refUser) {
+    await client
+        .from("players")
+        .update({
+            points: refUser.points + 20
         })
         .eq("id", startParam);
 }
@@ -144,16 +155,12 @@ function updateUI() {
     document.getElementById("strength").innerText = strength;
     document.getElementById("agility").innerText = agility;
     document.getElementById("charisma").innerText = charisma;
-
-    if (!canPlayToday()) {
-        document.querySelector("button").innerText = "⏳ Уже сыграно сегодня";
-    }
 }
 
 // ===== SAVE =====
 
 async function save() {
-    await supabase
+    await client
         .from("players")
         .update({
             points,
