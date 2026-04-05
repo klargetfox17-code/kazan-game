@@ -57,3 +57,25 @@ function save() {
     localStorage.setItem("agility", agility);
     localStorage.setItem("charisma", charisma);
 }
+function performMission() {
+    const lastActionDate = localStorage.getItem('lastActionDate');
+    const today = new Date().toDateString();
+
+    if (lastActionDate === today) {
+        alert("❌ Ты уже выполнил миссию сегодня! Приходи завтра.");
+        return;
+    }
+
+    let agility = parseInt(localStorage.getItem('agility')) || 1;
+    let points = parseInt(localStorage.getItem('points')) || 0;
+    
+    let reward = Math.floor(Math.random() * (25 - 10 + 1)) + 10;
+    points += reward;
+    agility += 1;
+
+    localStorage.setItem('points', points);
+    localStorage.setItem('agility', agility);
+    localStorage.setItem('lastActionDate', today);
+    updateUI();
+    alert(`✅ Миссия выполнена! +${reward} очков и +1 ловкость.`);
+}
