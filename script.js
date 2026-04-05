@@ -19,11 +19,15 @@ let lastActionDate = "";
 
 // ===== ЗАГРУЗКА =====
 async function loadPlayer() {
+    // Проверка: открыто ли в ТГ
+    if (!userId) {
+        document.getElementById("username").innerText = "Открой в Telegram";
+        return; 
+    }
 
     document.getElementById("username").innerText = "@" + username;
 
     try {
-
         let { data, error } = await client
             .from("players")
             .select("*")
@@ -31,12 +35,12 @@ async function loadPlayer() {
             .maybeSingle();
 
         if (error) {
-            console.log("Ошибка загрузки:", error);
+            console.error("Ошибка запроса:", error.message);
+            return;
         }
 
-        // если нет игрока → создаём
         if (!data) {
-
+            console.log("Создаю игрока...");
             let { error: insertError } = await client
                 .from("players")
                 .insert({
@@ -51,27 +55,27 @@ async function loadPlayer() {
                 });
 
             if (insertError) {
-                console.log("Ошибка создания:", insertError);
-                showGame(); // хотя бы UI покажем
+                console.error("Ошибка вставки:", insertError.message);
+                alert("Ошибка БД при создании: " + insertError.message);
                 return;
             }
-
-            location.reload();
+            // Вместо повторного вызова функции — перезагрузка
+            location.reload(); 
+            return;
         }
 
-        // если есть — загружаем
+        // Загрузка данных
         clan = data.clan;
-        points = data.points ?? 0;
-        strength = data.strength ?? 1;
-        agility = data.agility ?? 1;
-        charisma = data.charisma ?? 1;
-        lastActionDate = data.last_day ?? "";
+        points = data.points || 0;
+        strength = data.strength || 1;
+        agility = data.agility || 1;
+        charisma = data.charisma || 1;
+        lastActionDate = data.last_day || "";
 
         showGame();
 
     } catch (e) {
-        console.log("Крит ошибка:", e);
-        showGame();
+        console.error("Критический сбой:", e);
     }
 }
 
