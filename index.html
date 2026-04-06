@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kazan Clans</title>
     
-    <!-- ПОЛНЫЕ ССЫЛКИ НА БИБЛИОТЕКИ -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- ПОДКЛЮЧАЕМ БИБЛИОТЕКИ ЧЕРЕЗ НАДЕЖНЫЕ ИСТОЧНИКИ -->
+    <script src="https://unpkg.com"></script>
     <script src="https://telegram.org"></script>
 
     <style>
@@ -19,14 +19,18 @@
         .tab { display: none; }
         .active { display: block; }
         .char-img { width: 120px; height: 120px; margin: 10px auto; display: block; border-radius: 10px; }
+        #error-screen { color: #f87171; padding: 20px; font-size: 14px; background: #1e293b; margin: 10px; border-radius: 10px; display: none; }
     </style>
 </head>
 <body>
+    <!-- ЭКРАН ОШИБКИ (ПОЯВИТСЯ ЕСЛИ КОД УПАДЕТ) -->
+    <div id="error-screen"></div>
+
     <div class="container">
         <!-- СТАРТ -->
         <div id="start" class="tab active">
-            <h2>Загрузка Казани...</h2>
-            <p style="font-size:12px; color:#64748b;">Подключаемся к районам</p>
+            <h2>Загрузка районов Казани...</h2>
+            <p id="loading-status">Подключение к системе...</p>
         </div>
 
         <!-- ГЛАВНЫЙ ЭКРАН -->
@@ -49,11 +53,11 @@
             </div>
             <button onclick="openTab('actions')" style="background:#3b82f6;">⚡ В город</button>
             <button onclick="loadTop()" style="background:#8b5cf6;">🏆 Рейтинг</button>
-            <button onclick="resetGame()" style="background:#ef4444;margin-top:15px;padding:5px;font-size:11px;">Сброс</button>
+            <button onclick="resetGame()" style="background:#ef4444;margin-top:20px;padding:5px;font-size:11px;">Сброс</button>
             <div class="log" id="log"></div>
         </div>
 
-        <!-- ДЕЙСТВИЯ -->
+        <!-- ЭКРАН ДЕЙСТВИЙ -->
         <div id="actions" class="tab">
             <h2>Дела района</h2>
             <button onclick="mission()">🗡 Миссия (-2⚡)</button>
@@ -66,12 +70,11 @@
 
         <!-- ТОП -->
         <div id="top" class="tab">
-            <h2>🏆 ТОП Игроков</h2>
+            <h2>🏆 ТОП</h2>
             <div id="topList"></div>
             <button onclick="openTab('main')" style="background:#475569;">⬅ Назад</button>
         </div>
     </div>
-    <!-- Скрипт в самом конце -->
     <script src="script.js"></script>
 </body>
 </html>
