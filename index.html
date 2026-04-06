@@ -2,88 +2,117 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Kazan Clans</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
+
 body {
   background:#0f172a;
   color:white;
   font-family:sans-serif;
-  text-align:center;
+  margin:0;
+}
+
+.container {
+  padding:15px;
 }
 
 .card {
   background:#1e293b;
-  padding:15px;
   border-radius:15px;
-  margin:10px;
+  padding:15px;
+  margin-bottom:10px;
+}
+
+h1, h2, h3 {
+  margin:5px 0;
 }
 
 button {
-  width:90%;
-  padding:12px;
-  margin:5px;
-  border-radius:10px;
+  width:100%;
+  padding:15px;
+  font-size:18px;
+  margin-top:10px;
   border:none;
-  font-size:16px;
+  border-radius:10px;
+  background:#22c55e;
+  color:black;
+}
+
+.log {
+  background:#020617;
+  padding:10px;
+  height:120px;
+  overflow:auto;
+  font-size:14px;
 }
 
 .tab { display:none; }
 .active { display:block; }
 
-.character {
-  width:120px;
-  transition:0.3s;
-}
 </style>
-
 </head>
 
 <body>
 
+<div class="container">
+
+<!-- СТАРТ -->
+<div id="start" class="tab active"></div>
+
+<!-- ОСНОВА -->
+<div id="main" class="tab">
+
 <h2 id="username"></h2>
-
-<!-- ВЫБОР РАЙОНА -->
-<div id="startScreen" class="tab active"></div>
-
-<!-- ОСНОВНОЙ ЭКРАН -->
-<div id="mainScreen" class="tab">
-
-<img id="character" class="character" src="https://i.imgur.com/9XnKZ6X.png">
 
 <div class="card">
 <h3 id="clan"></h3>
-<p>Очки: <span id="points">0</span></p>
-<p>Энергия: <span id="energy">0</span>/<span id="maxEnergy">10</span></p>
+<p id="bonus"></p>
+</div>
+
+<div class="card">
+<p>Очки: <b id="points"></b></p>
+<p>Энергия: <b id="energy"></b>/<span id="maxEnergy"></span></p>
 <p id="timer"></p>
 </div>
 
 <div class="card">
-<p>💪 <span id="strength">1</span></p>
-<p>🏃 <span id="agility">1</span></p>
-<p>🗣 <span id="charisma">1</span></p>
+<p>💪 Сила: <b id="strength"></b> (усиливает атаки)</p>
+<p>🏃 Ловкость: <b id="agility"></b> (усиливает миссии)</p>
+<p>🗣 Харизма: <b id="charisma"></b> (усиливает активность)</p>
 </div>
 
-<button onclick="openTab('actions')">⚡ Действия</button>
+<button onclick="openTab('actions')">⚡ ДЕЙСТВИЯ</button>
+<button onclick="loadTop()">🏆 ТОП</button>
+
+<div class="log" id="log"></div>
 
 </div>
 
-<!-- ВКЛАДКА ДЕЙСТВИЙ -->
+<!-- ДЕЙСТВИЯ -->
 <div id="actions" class="tab">
 
-<button onclick="mission()">🗡 Миссия (-2 энергия)</button>
-<button onclick="attack()">💣 Пакость (-5 энергия)</button>
-<button onclick="activity()">🎉 Активность (-1 энергия)</button>
+<h2>Действия</h2>
 
-<br><br>
-<button onclick="openTab('mainScreen')">⬅ Назад</button>
+<button onclick="mission()">🗡 Миссия (−2 энергии, +очки)</button>
+<button onclick="attack()">💣 Пакость (−5 энергии, атака)</button>
+<button onclick="activity()">🎉 Активность (−1 энергия)</button>
+
+<button onclick="openTab('main')">⬅ Назад</button>
+
+</div>
+
+<!-- ТОП -->
+<div id="top" class="tab">
+<h2>🏆 ТОП игроков</h2>
+<div id="topList"></div>
+<button onclick="openTab('main')">⬅ Назад</button>
+</div>
 
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
