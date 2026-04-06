@@ -7,37 +7,81 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
+<style>
+body {
+  background:#0f172a;
+  color:white;
+  font-family:sans-serif;
+  text-align:center;
+}
+
+.card {
+  background:#1e293b;
+  padding:15px;
+  border-radius:15px;
+  margin:10px;
+}
+
+button {
+  width:90%;
+  padding:12px;
+  margin:5px;
+  border-radius:10px;
+  border:none;
+  font-size:16px;
+}
+
+.tab { display:none; }
+.active { display:block; }
+
+.character {
+  width:120px;
+  transition:0.3s;
+}
+</style>
+
 </head>
 
-<body style="background:#0f172a; color:white; font-family:sans-serif; text-align:center;">
+<body>
 
-<h1>🏙 Казанские кланы</h1>
+<h2 id="username"></h2>
 
-<h3 id="username">...</h3>
+<!-- ВЫБОР РАЙОНА -->
+<div id="startScreen" class="tab active"></div>
 
-<div id="clanBlock"></div>
+<!-- ОСНОВНОЙ ЭКРАН -->
+<div id="mainScreen" class="tab">
 
-<div style="background:#1e293b; padding:15px; border-radius:15px; margin:10px;">
-<h2 id="points">Очки: 0</h2>
+<img id="character" class="character" src="https://i.imgur.com/9XnKZ6X.png">
+
+<div class="card">
+<h3 id="clan"></h3>
+<p>Очки: <span id="points">0</span></p>
+<p>Энергия: <span id="energy">0</span>/<span id="maxEnergy">10</span></p>
+<p id="timer"></p>
 </div>
 
-<div style="background:#1e293b; padding:10px; border-radius:10px;">
+<div class="card">
 <p>💪 <span id="strength">1</span></p>
 <p>🏃 <span id="agility">1</span></p>
 <p>🗣 <span id="charisma">1</span></p>
 </div>
 
-<br>
+<button onclick="openTab('actions')">⚡ Действия</button>
 
-<button onclick="mission()" style="width:90%; padding:15px;">🗡 Миссия</button>
-<button onclick="attack()" style="width:90%; padding:15px;">💣 Пакость</button>
-<button onclick="activity()" style="width:90%; padding:15px;">🎉 Активность</button>
+</div>
+
+<!-- ВКЛАДКА ДЕЙСТВИЙ -->
+<div id="actions" class="tab">
+
+<button onclick="mission()">🗡 Миссия (-2 энергия)</button>
+<button onclick="attack()">💣 Пакость (-5 энергия)</button>
+<button onclick="activity()">🎉 Активность (-1 энергия)</button>
 
 <br><br>
+<button onclick="openTab('mainScreen')">⬅ Назад</button>
 
-<button onclick="leaderboard()" style="width:90%; padding:15px; background:gold; color:black;">
-🏆 ТОП ИГРОКОВ
-</button>
+</div>
 
 <script src="script.js"></script>
 

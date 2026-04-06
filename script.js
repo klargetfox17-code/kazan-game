@@ -1,5 +1,5 @@
-const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
+const SUPABASE_URL = "ТВОЙ_URL";
+const SUPABASE_KEY = "ТВОЙ_ANON_KEY";
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -11,217 +11,185 @@ let username = user?.username || "Игрок";
 
 // данные
 let points = 0;
+let energy = 10;
+let maxEnergy = 10;
+let lastEnergyTime = Date.now();
+let clan = null;
+
 let strength = 1;
 let agility = 1;
 let charisma = 1;
-let clan = null;
-let lastActionDate = "";
+let level = 1;
 
-// ===== ЗАГРУЗКА =====
-async function loadPlayer() {
-
-    document.getElementById("username").innerText = "@" + username;
-
-    try {
-
-        let { data, error } = await client
-            .from("players")
-            .select("*")
-            .eq("id", userId)
-            .maybeSingle();
-
-        if (error) {
-            console.log("Ошибка загрузки:", error);
-        }
-
-        // если нет игрока → создаём
-        if (!data) {
-
-            let { error: insertError } = await client
-                .from("players")
-                .insert({
-                    id: userId,
-                    username: username,
-                    clan: null,
-                    points: 0,
-                    strength: 1,
-                    agility: 1,
-                    charisma: 1,
-                    last_day: ""
-                });
-
-            if (insertError) {
-                console.log("Ошибка создания:", insertError);
-                showGame(); // хотя бы UI покажем
-                return;
-            }
-
-            return loadPlayer();
-        }
-
-        // если есть — загружаем
-        clan = data.clan;
-        points = data.points ?? 0;
-        strength = data.strength ?? 1;
-        agility = data.agility ?? 1;
-        charisma = data.charisma ?? 1;
-        lastActionDate = data.last_day ?? "";
-
-        showGame();
-
-    } catch (e) {
-        console.log("Крит ошибка:", e);
-        showGame();
-    }
-}
+// ===== РАЙОНЫ =====
+const clans = {
+"Вахитовский": { bonus:"харизма", img:"https://i.imgur.com/9XnKZ6X.png" },
+"Приволжский": { bonus:"ловкость" },
+"Советский": { bonus:"сила" },
+"Московский": { bonus:"харизма" },
+"Кировский": { bonus:"сила" },
+"Авиастрой": { bonus:"ловкость" },
+"Ново-Савиновский": { bonus:"харизма" }
+};
 
 // ===== UI =====
-function showGame() {
-
-    if (!clan) {
-        document.getElementById("clanBlock").innerHTML = `
-        <h3>Выбери район:</h3>
-
-        <button onclick="selectClan('Авиастрой')">✈️ Авиастрой (+2 ловкость)</button><br><br>
-        <button onclick="selectClan('Кировский')">💪 Кировский (+2 сила)</button><br><br>
-        <button onclick="selectClan('Московский')">🗣 Московский (+2 харизма)</button>
-        `;
-        updateUI();
-        return;
-    }
-
-    document.getElementById("clanBlock").innerHTML =
-        `<h3>Твой район: ${clan}</h3>`;
-
-    updateUI();
+function openTab(id) {
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+document.getElementById(id).classList.add("active");
 }
 
-// ===== ВЫБОР КЛАНА =====
+// ===== СТАРТ =====
+function showStart() {
+
+let html = "<h3>Выбери район</h3>";
+
+for (let c in clans) {
+html += `<button onclick="selectClan('${c}')">${c} (+${clans[c].bonus})</button>`;
+}
+
+document.getElementById("startScreen").innerHTML = html;
+}
+
+// ===== ВЫБОР =====
 function selectClan(c) {
 
-    clan = c;
+clan = c;
 
-    if (c === "Авиастрой") agility += 2;
-    if (c === "Кировский") strength += 2;
-    if (c === "Московский") charisma += 2;
+if (clans[c].bonus === "сила") strength += 2;
+if (clans[c].bonus === "ловкость") agility += 2;
+if (clans[c].bonus === "харизма") charisma += 2;
 
-    save();
-    showGame();
+save();
+
+openTab("mainScreen");
+updateUI();
 }
 
-// ===== ПРОВЕРКА =====
-function canPlayToday() {
-    let today = new Date().toDateString();
-    return lastActionDate !== today;
+// ===== ЭНЕРГИЯ =====
+function regenEnergy() {
+
+let now = Date.now();
+let diff = Math.floor((now - lastEnergyTime)/60000); // минуты
+
+if (diff > 0) {
+energy = Math.min(maxEnergy, energy + diff);
+lastEnergyTime = now;
+}
+
+let next = 60 - ((now - lastEnergyTime)/1000);
+
+document.getElementById("timer").innerText =
+"До энергии: " + Math.floor(next) + " сек";
 }
 
 // ===== ДЕЙСТВИЯ =====
 function mission() {
-    if (!canPlayToday()) return alert("Уже играл сегодня");
 
-    let reward = 10 + Math.floor(Math.random() * agility);
+if (energy < 2) return alert("Нет энергии");
 
-    points += reward;
-    agility += 1;
-    lastActionDate = new Date().toDateString();
+energy -= 2;
+points += 10 + agility;
+agility++;
 
-    save();
-    updateUI();
-
-    alert("Миссия +" + reward);
+save();
+updateUI();
 }
 
 function attack() {
-    if (!canPlayToday()) return alert("Уже играл сегодня");
 
-    let reward = 10 + strength;
+if (energy < 5) return alert("Нет энергии");
 
-    points += reward;
-    strength += 1;
-    lastActionDate = new Date().toDateString();
+energy -= 5;
+points += 15 + strength;
+strength++;
 
-    save();
-    updateUI();
-
-    alert("Пакость +" + reward);
+save();
+updateUI();
 }
 
 function activity() {
-    if (!canPlayToday()) return alert("Уже играл сегодня");
 
-    points += 12;
-    charisma += 1;
-    lastActionDate = new Date().toDateString();
+if (energy < 1) return alert("Нет энергии");
 
-    save();
-    updateUI();
+energy -= 1;
+points += 8;
+charisma++;
 
-    alert("Активность +12");
-}
-
-// ===== ТОП =====
-async function leaderboard() {
-
-    try {
-
-        let { data, error } = await client
-            .from("players")
-            .select("*")
-            .order("points", { ascending: false })
-            .limit(10);
-
-        if (error) {
-            alert("Ошибка загрузки топа");
-            return;
-        }
-
-        if (!data || data.length === 0) {
-            alert("Пока нет игроков");
-            return;
-        }
-
-        let text = "🏆 ТОП ИГРОКОВ\n\n";
-
-        data.forEach((p, i) => {
-            text += `${i+1}. @${p.username} — ${p.points} (${p.clan || "без клана"})\n`;
-        });
-
-        alert(text);
-
-    } catch (e) {
-        alert("Ошибка");
-    }
+save();
+updateUI();
 }
 
 // ===== UI =====
 function updateUI() {
-    document.getElementById("points").innerText = "Очки: " + points;
-    document.getElementById("strength").innerText = strength;
-    document.getElementById("agility").innerText = agility;
-    document.getElementById("charisma").innerText = charisma;
+
+document.getElementById("username").innerText = "@" + username;
+document.getElementById("clan").innerText = clan;
+document.getElementById("points").innerText = points;
+document.getElementById("energy").innerText = energy;
+document.getElementById("maxEnergy").innerText = maxEnergy;
+
+document.getElementById("strength").innerText = strength;
+document.getElementById("agility").innerText = agility;
+document.getElementById("charisma").innerText = charisma;
+
+// прокачка персонажа
+let img = document.getElementById("character");
+
+if (points > 100) img.src = "https://i.imgur.com/JYUB0m3.png";
+if (points > 300) img.src = "https://i.imgur.com/7yUvePI.png";
 }
 
 // ===== SAVE =====
 async function save() {
 
-    try {
-        await client
-            .from("players")
-            .update({
-                username,
-                points,
-                strength,
-                agility,
-                charisma,
-                last_day: lastActionDate,
-                clan
-            })
-            .eq("id", userId);
-
-    } catch (e) {
-        console.log("Ошибка сохранения");
-    }
+await client.from("players").upsert({
+id:userId,
+username,
+points,
+energy,
+max_energy:maxEnergy,
+last_energy_time:lastEnergyTime,
+clan,
+strength,
+agility,
+charisma,
+level
+});
 }
 
-// ===== СТАРТ =====
-loadPlayer();
+// ===== LOAD =====
+async function load() {
+
+let { data } = await client
+.from("players")
+.select("*")
+.eq("id", userId)
+.maybeSingle();
+
+if (!data) {
+showStart();
+return;
+}
+
+points = data.points;
+energy = data.energy;
+maxEnergy = data.max_energy;
+lastEnergyTime = data.last_energy_time;
+clan = data.clan;
+
+strength = data.strength;
+agility = data.agility;
+charisma = data.charisma;
+
+openTab("mainScreen");
+updateUI();
+}
+
+// ===== LOOP =====
+setInterval(()=>{
+regenEnergy();
+updateUI();
+},1000);
+
+// ===== START =====
+load();
