@@ -27,8 +27,8 @@ const clans = {
 "Авиастрой": { bonus:"Атаки +40%" },
 "Приволжский": { bonus:"Миссии +30%" },
 "Советский": { bonus:"Все +10%" },
-"Московский": { bonus:"Быстрый реген" },
-"Кировский": { bonus:"Атака дешевле" },
+"Московский": { bonus:"Реген быстрее" },
+"Кировский": { bonus:"Атака дешевле (-1 энергия)" },
 "Ново-Савиновский": { bonus:"Энергия +3" }
 };
 
@@ -43,44 +43,57 @@ let el = document.getElementById("log");
 el.innerHTML = text + "<br>" + el.innerHTML;
 }
 
+// ===== ТАЙМЕР =====
+function regen() {
+
+let now = Date.now();
+
+// скорость (московский быстрее)
+let speed = clan === "Московский" ? 30000 : 60000;
+
+let diff = Math.floor((now - lastEnergy) / speed);
+
+if (diff > 0) {
+energy = Math.min(maxEnergy, energy + diff);
+lastEnergy += diff * speed;
+}
+
+let next = speed - (now - lastEnergy);
+
+document.getElementById("timer").innerText =
+"⏳ До энергии: " + Math.floor(next/1000) + " сек";
+}
+
 // ===== СТАРТ =====
 function showStart() {
+
 let html = "<h2>Выбери район</h2>";
 
 for (let c in clans) {
-html += `<button onclick="selectClan('${c}')">${c}<br>${clans[c].bonus}</button>`;
+html += `<button onclick="selectClan('${c}')">
+<b>${c}</b><br>${clans[c].bonus}
+</button>`;
 }
 
 document.getElementById("start").innerHTML = html;
 }
 
 // ===== ВЫБОР =====
-function selectClan(c) {
+async function selectClan(c) {
 
 clan = c;
 
 if (c === "Ново-Савиновский") maxEnergy += 3;
 
-save();
+await save();
+
 openTab("main");
 update();
 }
 
-// ===== ЭНЕРГИЯ =====
-function regen() {
-let now = Date.now();
-let diff = Math.floor((now - lastEnergy)/60000);
-
-if (diff > 0) {
-energy = Math.min(maxEnergy, energy + diff);
-lastEnergy = now;
-}
-
-document.getElementById("timer").innerText =
-"Следующая энергия через ~60 сек";
-}
-
 // ===== ДЕЙСТВИЯ =====
+
+// 🗡 МИССИЯ
 function mission() {
 
 if (energy < 2) return log("❌ Нет энергии");
@@ -90,38 +103,67 @@ energy -= 2;
 let gain = 10 + agility;
 
 if (clan === "Приволжский") gain *= 1.3;
+if (clan === "Советский") gain *= 1.1;
 
 points += Math.floor(gain);
 agility++;
 
-log("🗡 Миссия: +" + gain);
+log(`🗡 Миссия: +${Math.floor(gain)} очков | +1 ловкость`);
 
 save();
 update();
 }
 
-function attack() {
+// 💣 АТАКА (ПРОСТАЯ)
+async function attack() {
 
-let cost = 5;
-if (clan === "Кировский") cost = 4;
+let cost = clan === "Кировский" ? 4 : 5;
 
 if (energy < cost) return log("❌ Нет энергии");
 
 energy -= cost;
 
-let gain = 15 + strength;
+// выбираем случайного игрока
+let { data } = await db
+.from("players")
+.select("*")
+.neq("id", id)
+.limit(1);
 
-if (clan === "Авиастрой") gain *= 1.4;
+if (!data || data.length === 0) {
+log("😴 Нет целей для атаки");
+return;
+}
 
-points += Math.floor(gain);
+let target = data[0];
+
+// шанс успеха
+let power = strength + Math.random()*10;
+let enemy = target.strength + Math.random()*10;
+
+if (power > enemy) {
+
+let steal = 10;
+
+await db.from("players")
+.update({ points: target.points - steal })
+.eq("id", target.id);
+
+points += steal;
+
+log(`💣 Ты ограбил ${target.username} (-${steal} у него)`);
+
+} else {
+log("💥 Атака провалена");
+}
+
 strength++;
-
-log("💣 Атака: +" + gain);
 
 save();
 update();
 }
 
+// 🎉 АКТИВНОСТЬ
 function activity() {
 
 if (energy < 1) return log("❌ Нет энергии");
@@ -131,11 +173,12 @@ energy--;
 let gain = 8 + charisma;
 
 if (clan === "Вахитовский") gain *= 1.3;
+if (clan === "Советский") gain *= 1.1;
 
 points += Math.floor(gain);
 charisma++;
 
-log("🎉 Активность: +" + gain);
+log(`🎉 Активность: +${Math.floor(gain)} очков | +1 харизма`);
 
 save();
 update();
@@ -161,7 +204,7 @@ html += `<p>${p.username} — ${p.points} (${p.clan})</p>`;
 document.getElementById("topList").innerHTML = html;
 }
 
-// ===== UPDATE =====
+// ===== ОБНОВЛЕНИЕ UI =====
 function update() {
 
 document.getElementById("username").innerText = "@" + username;
@@ -175,10 +218,17 @@ document.getElementById("maxEnergy").innerText = maxEnergy;
 document.getElementById("strength").innerText = strength;
 document.getElementById("agility").innerText = agility;
 document.getElementById("charisma").innerText = charisma;
+
+// 👇 добавим отображение в actions
+if (document.getElementById("actionsStats")) {
+document.getElementById("actionsStats").innerHTML =
+`Энергия: ${energy}/${maxEnergy} | 💪${strength} 🏃${agility} 🗣${charisma}`;
+}
 }
 
-// ===== SAVE =====
+// ===== СОХРАНЕНИЕ =====
 async function save() {
+
 await db.from("players").upsert({
 id,
 username,
@@ -193,7 +243,7 @@ charisma
 });
 }
 
-// ===== LOAD =====
+// ===== ЗАГРУЗКА =====
 async function load() {
 
 let { data } = await db
@@ -203,6 +253,20 @@ let { data } = await db
 .maybeSingle();
 
 if (!data) {
+
+// 👉 СОЗДАЕМ ИГРОКА
+await db.from("players").insert({
+id,
+username,
+points:0,
+energy:10,
+max_energy:10,
+last_energy:Date.now(),
+strength:1,
+agility:1,
+charisma:1
+});
+
 showStart();
 return;
 }
@@ -210,11 +274,17 @@ return;
 points = data.points;
 energy = data.energy;
 maxEnergy = data.max_energy;
+lastEnergy = data.last_energy;
 clan = data.clan;
 
 strength = data.strength;
 agility = data.agility;
 charisma = data.charisma;
+
+if (!clan) {
+showStart();
+return;
+}
 
 openTab("main");
 update();
@@ -226,4 +296,5 @@ regen();
 update();
 },1000);
 
+// ===== START =====
 load();
