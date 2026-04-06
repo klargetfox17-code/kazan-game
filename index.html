@@ -1,41 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kazan Clans</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<style>
-body {background:#0f172a;color:white;font-family:sans-serif;margin:0;padding:0;}
-.container{padding:15px;}
-.card{background:#1e293b;border-radius:15px;padding:15px;margin-bottom:10px; border: 1px solid #334155;}
-button{width:100%;padding:15px;font-size:16px;margin-top:10px;border:none;border-radius:10px;background:#22c55e;color:white;font-weight:bold;cursor:pointer;}
-button:active{transform: scale(0.98); opacity: 0.9;}
-.log{background:#020617;padding:10px;height:100px;overflow:auto;font-size:12px;border-radius:10px;margin-top:10px;color:#94a3b8;}
-.tab{display:none;}
-.active{display:block;}
-small{opacity: 0.8; font-weight: normal;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kazan Clans</title>
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://telegram.org"></script>
+    <style>
+        body {background:#0f172a;color:white;font-family:sans-serif;margin:0;text-align:center;}
+        .container{padding:15px;}
+        .card{background:#1e293b;border-radius:15px;padding:15px;margin-bottom:10px;border:1px solid #334155;}
+        button{width:100%;padding:15px;font-size:16px;margin-top:10px;border:none;border-radius:10px;background:#22c55e;color:white;font-weight:bold;}
+        .log{background:#020617;padding:10px;height:80px;overflow:auto;font-size:12px;border-radius:10px;color:#94a3b8;text-align:left;}
+        .tab{display:none;}
+        .active{display:block;}
+        .char-img {width:120px;height:120px;margin:10px auto;display:block;}
+    </style>
 </head>
-
 <body>
 <div class="container">
 
-    <!-- ВЫБОР РАЙОНА -->
+    <!-- ОКНО СТАРТА -->
     <div id="start" class="tab active">
         <h2>Загрузка...</h2>
     </div>
 
-    <!-- ГЛАВНЫЙ ЭКРАН -->
+    <!-- ГЛАВНОЕ ОКНО -->
     <div id="main" class="tab">
         <h2 id="username">@player</h2>
         
+        <!-- Картинка персонажа -->
+        <img id="character" class="char-img" src="https://imgur.com">
+
         <div class="card">
             <h3 id="clan" style="margin:0;color:#22c55e;">Район</h3>
-            <p id="bonus" style="font-size:14px;margin-top:5px;"></p>
+            <p id="bonus" style="font-size:13px;margin:5px 0 0 0;"></p>
         </div>
 
         <div class="card" style="display:flex; justify-content:space-around;">
@@ -45,33 +44,31 @@ small{opacity: 0.8; font-weight: normal;}
         </div>
 
         <div class="card">
-            Очки: <b id="points">0</b><br>
-            Энергия: <b id="energy">10</b>/<span id="maxEnergy">10</span><br>
+            🏆 Очки: <b id="points">0</b><br>
+            ⚡ Энергия: <b id="energy">10</b>/<span id="maxEnergy">10</span><br>
             ⏳ <span id="timer">0 сек</span>
         </div>
 
-        <button onclick="openTab('actions')" style="background:#3b82f6;">⚡ В город (Действия)</button>
-        <button onclick="loadTop()" style="background:#8b5cf6;">🏆 Рейтинг районов</button>
-        <button onclick="resetGame()" style="background:#ef4444; margin-top:20px; padding:8px; font-size:12px;">♻️ Сброс прогресса</button>
+        <button onclick="openTab('actions')" style="background:#3b82f6;">⚡ В город</button>
+        <button onclick="loadTop()" style="background:#8b5cf6;">🏆 Топ районов</button>
+        <button onclick="resetGame()" style="background:#ef4444;margin-top:15px;padding:5px;font-size:11px;">Сброс</button>
         
-        <div class="log" id="log">Добро пожаловать в Казань!</div>
+        <div class="log" id="log"></div>
     </div>
 
-    <!-- ЭКРАН ДЕЙСТВИЙ -->
+    <!-- ОКНО ДЕЙСТВИЙ -->
     <div id="actions" class="tab">
         <h2>Районные дела</h2>
-        <div class="card" id="actionsStats"></div>
-
-        <button onclick="mission()">🗡 Миссия (-2 энергия)<br><small>Качаем ловкость</small></button>
-        <button onclick="activity()">🎉 Активность (-1 энергия)<br><small>Качаем харизму</small></button>
-        <button onclick="openAttack()" style="background:#f59e0b;">💣 Пакость (-5 энергия)<br><small>Грабим другие районы</small></button>
-
+        <button onclick="mission()">🗡 Миссия (-2⚡)<br><small>+Ловкость</small></button>
+        <button onclick="activity()">🎉 Активность (-1⚡)<br><small>+Харизма</small></button>
+        <button onclick="openAttack()" style="background:#f59e0b;">💣 Пакость (-5⚡)<br><small>+Сила</small></button>
+        
         <div id="attackUI"></div>
-        <div class="log" id="logActions">Здесь будут твои отчеты...</div>
+        <div class="log" id="logActions"></div>
         <button onclick="openTab('main')" style="background:#475569;">⬅ Назад</button>
     </div>
 
-    <!-- ТОП ИГРОКОВ -->
+    <!-- ТОП -->
     <div id="top" class="tab">
         <h2>🏆 ТОП Игроков</h2>
         <div id="topList"></div>
@@ -79,7 +76,6 @@ small{opacity: 0.8; font-weight: normal;}
     </div>
 
 </div>
-
 <script src="script.js"></script>
 </body>
 </html>
