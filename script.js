@@ -8,14 +8,15 @@ let tg = window.Telegram.WebApp;
 let user = tg.initDataUnsafe?.user;
 
 // всегда один и тот же id
-let id = localStorage.getItem("uid");
+let id = user?.id?.toString(); 
 
+// Если открыли в браузере (для тестов)
 if (!id) {
-  id = user?.id ? "tg_" + user.id : "user_" + Math.random().toString(36).substr(2, 9);
+  id = localStorage.getItem("uid") || "test_" + Math.random().toString(36).substr(2, 9);
   localStorage.setItem("uid", id);
 }
 
-let username = user?.username || "Игрок_" + id.slice(-4);
+let username = user?.username || user?.first_name || "Игрок_" + id.slice(-4)
 
 // ===== ДАННЫЕ =====
 let points = 0;
