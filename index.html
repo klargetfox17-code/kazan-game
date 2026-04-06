@@ -4,99 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kazan Clans</title>
+    <!-- Подключаем библиотеки правильно -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://telegram.org"></script>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --green: #22c55e; --blue: #3b82f6; --red: #ef4444; }
-        body { background: var(--bg); color: white; font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; text-align: center; -webkit-tap-highlight-color: transparent; }
+        :root { --bg: #0f172a; --card: #1e293b; --green: #22c55e; --blue: #3b82f6; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; text-align: center; -webkit-tap-highlight-color: transparent; }
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
         
-        /* Кнопки */
         button { 
             width: 100%; padding: 18px; font-size: 18px; font-weight: bold; 
             margin-top: 12px; border: none; border-radius: 15px; 
             background: var(--green); color: white; cursor: pointer;
-            transition: transform 0.1s, brightness 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 0 #15803d;
         }
-        button:active { transform: scale(0.96); brightness: 1.2; }
+        button:active { transform: translateY(2px); box-shadow: 0 2px 0 #15803d; }
         
         .card { background: var(--card); border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #334155; }
-        .log { background: #020617; padding: 12px; height: 100px; overflow-y: auto; font-size: 14px; border-radius: 12px; color: #94a3b8; text-align: left; margin-top: 15px; border: 1px solid #1e293b; }
-        
         .tab { display: none; }
         .active { display: block; }
         
-        /* Характеристики */
-        .stats-grid { display: flex; justify-content: space-around; font-size: 16px; font-weight: bold; }
-        .stat-item { display: flex; flex-direction: column; gap: 5px; }
-        .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
+        .stats-grid { display: flex; justify-content: space-around; }
+        .stat-item { display: flex; flex-direction: column; font-size: 14px; }
+        .stat-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
 
-        h2 { font-size: 28px; margin-bottom: 20px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .energy-bar { font-size: 20px; color: #fbbf24; font-weight: 800; margin: 10px 0; }
-        .timer-text { font-size: 14px; color: #94a3b8; }
-        
-        .reset-btn { background: none; border: 1px solid #334155; color: #64748b; font-size: 12px; padding: 8px; margin-top: 40px; width: auto; box-shadow: none; }
+        .energy-val { font-size: 24px; color: #fbbf24; font-weight: 800; }
+        .log { background: #020617; padding: 12px; height: 80px; overflow-y: auto; font-size: 13px; border-radius: 12px; color: #94a3b8; text-align: left; margin-top: 10px; }
+        .reset-link { color: #64748b; font-size: 11px; margin-top: 30px; display: block; text-decoration: underline; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- ВЫБОР РАЙОНА -->
+        <!-- ЭКРАН ЗАГРУЗКИ / ВЫБОРА -->
         <div id="start" class="tab active">
-            <h2 style="margin-top: 40px;">Выбери свой район</h2>
-            <div id="clanList">Загрузка районов...</div>
+            <h2 id="startTitle">Загрузка...</h2>
+            <div id="clanList"></div>
         </div>
 
         <!-- ГЛАВНЫЙ ЭКРАН -->
         <div id="main" class="tab">
-            <h2 id="username">@player</h2>
-            
+            <h2 id="username">Игрок</h2>
             <div class="card">
-                <h3 id="clan" style="margin:0; color:var(--green); font-size: 24px;">Район</h3>
-                <p id="bonus" style="font-size:14px; margin:8px 0 0 0; color: #94a3b8;"></p>
+                <h3 id="clan" style="margin:0; color:var(--green);">Район</h3>
+                <p id="bonus" style="font-size:12px; color:#94a3b8; margin:5px 0 0 0;"></p>
             </div>
-
             <div class="card stats-grid">
                 <div class="stat-item"><span class="stat-label">Сила</span><div>💪 <b id="m_strength">1</b></div></div>
                 <div class="stat-item"><span class="stat-label">Ловкость</span><div>⚡ <b id="m_agility">1</b></div></div>
                 <div class="stat-item"><span class="stat-label">Харизма</span><div>🎭 <b id="m_charisma">1</b></div></div>
             </div>
-
             <div class="card">
-                <div style="font-size: 14px; color: #94a3b8;">Твой авторитет:</div>
-                <div style="font-size: 32px; font-weight: 900; margin: 5px 0;">🏆 <span id="points">0</span></div>
-                <div class="energy-bar">🔋 <span id="energy">10</span> / <span id="maxEnergy">10</span></div>
-                <div class="timer-text">⏳ <span id="timer">Заряжен</span></div>
+                🏆 Авторитет: <b id="points" style="font-size: 20px;">0</b><br><br>
+                <div class="energy-val">🔋 <span id="energy">10</span> / <span id="maxEnergy">10</span></div>
+                <div id="timer" style="font-size: 12px; color: #94a3b8;">Заряжен</div>
             </div>
-
-            <button onclick="openTab('actions')" style="background: var(--blue);">⚡ В ГОРОД (ДЕЙСТВИЯ)</button>
-            <button onclick="loadTop()" style="background: #8b5cf6;">🏆 РЕЙТИНГ КАЗАНИ</button>
-            
-            <div class="log" id="log">Добро пожаловать в игру!</div>
-            <button onclick="resetGame()" class="reset-btn">♻️ Начать всё сначала (СБРОС)</button>
+            <button onclick="openTab('actions')" style="background: var(--blue); box-shadow: 0 4px 0 #1d4ed8;">⚡ ДЕЙСТВИЯ</button>
+            <button onclick="loadTop()" style="background: #8b5cf6; box-shadow: 0 4px 0 #6d28d9;">🏆 ТОП РАЙОНОВ</button>
+            <div class="log" id="log"></div>
+            <span class="reset-link" onclick="resetGame()">Начать игру заново (Сброс)</span>
         </div>
 
-        <!-- ДЕЙСТВИЯ -->
+        <!-- ЭКРАН ДЕЙСТВИЙ -->
         <div id="actions" class="tab">
             <h2>Дела района</h2>
             <div class="card">
-                <div class="energy-bar">🔋 Энергия: <span id="act_energy">10</span> / <span id="act_maxEnergy">10</span></div>
+                <div class="energy-val">🔋 <span id="act_energy">10</span> / <span id="act_maxEnergy">10</span></div>
             </div>
-
-            <button onclick="mission()">🗡 МИССИЯ (-2⚡)<br><small style="font-weight:normal; opacity:0.8;">+ Очки и Ловкость</small></button>
-            <button onclick="activity()">🎉 АКТИВНОСТЬ (-1⚡)<br><small style="font-weight:normal; opacity:0.8;">+ Очки и Харизма</small></button>
-            <button onclick="openAttack()" style="background:#f59e0b;">💣 ПАКОСТЬ (-5⚡)<br><small style="font-weight:normal; opacity:0.8;">Ударить по чужому району</small></button>
-            
-            <div id="attackUI"></div>
-            <div class="log" id="logActions">Готов к суете?</div>
-            <button onclick="openTab('main')" style="background:#475569;">⬅ НАЗАД В МЕНЮ</button>
+            <button onclick="mission()">🗡 МИССИЯ (-2⚡)</button>
+            <button onclick="activity()">🎉 АКТИВНОСТЬ (-1⚡)</button>
+            <div class="log" id="logActions"></div>
+            <button onclick="openTab('main')" style="background:#475569; box-shadow: 0 4px 0 #1e293b;">⬅ НАЗАД</button>
         </div>
 
         <!-- ТОП -->
         <div id="top" class="tab">
-            <h2>🏆 ТОП Игроков</h2>
+            <h2>🏆 ТОП</h2>
             <div id="topList"></div>
-            <button onclick="openTab('main')" style="background:#475569;">⬅ НАЗАД</button>
+            <button onclick="openTab('main')" style="background:#475569; box-shadow: 0 4px 0 #1e293b;">⬅ НАЗАД</button>
         </div>
     </div>
     <script src="script.js"></script>
