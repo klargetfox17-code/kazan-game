@@ -248,46 +248,40 @@ charisma
 
 // ===== LOAD =====
 async function load() {
+  let { data, error } = await db
+    .from("players")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
 
-let { data } = await db
-.from("players")
-.select("*")
-.eq("id", id)
-.maybeSingle();
+  if (error) return console.error("Ошибка сети:", error);
 
-if (!data) {
+  if (!data) {
+    console.log("Полностью новый игрок");
+    // Не делаем insert здесь, сделаем upsert в функции selectClan
+    showStart();
+    openTab("start"); // Убедись, что ID совпадает с HTML
+    return;
+  }
 
-await db.from("players").insert({
-id,
-username,
-points:0,
-energy:10,
-max_energy:10,
-last_energy:Date.now(),
-strength:1,
-agility:1,
-charisma:1,
-clan:null
-});
+  // Загружаем данные из базы
+  points = data.points || 0;
+  energy = data.energy || 10;
+  maxEnergy = data.max_energy || 10;
+  lastEnergy = data.last_energy || Date.now();
+  clan = data.clan;
+  strength = data.strength || 1;
+  agility = data.agility || 1;
+  charisma = data.charisma || 1;
 
-showStart();
-return;
-}
-
-points = data.points;
-energy = data.energy;
-maxEnergy = data.max_energy;
-lastEnergy = data.last_energy;
-clan = data.clan;
-
-strength = data.strength;
-agility = data.agility;
-charisma = data.charisma;
-
-if (!clan) return showStart();
-
-openTab("main");
-update();
+  // Если запись есть, но клан не выбран
+  if (!clan) {
+    showStart();
+    openTab("start");
+  } else {
+    openTab("main");
+    update();
+  }
 }
 
 // ===== ТОП =====
