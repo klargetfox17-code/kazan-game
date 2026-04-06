@@ -2,12 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kazan Clans</title>
+    <!-- ПРАВИЛЬНЫЕ ССЫЛКИ НА БИБЛИОТЕКИ -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://telegram.org"></script>
     <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; margin: 0; text-align: center; }
+        body { background: #0f172a; color: white; font-family: sans-serif; margin: 0; text-align: center; overflow-x: hidden; }
         .container { padding: 15px; }
         .card { background: #1e293b; border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #334155; }
         button { width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; border: none; border-radius: 10px; background: #22c55e; color: white; font-weight: bold; cursor: pointer; }
@@ -23,6 +24,7 @@
         <!-- ВЫБОР РАЙОНА -->
         <div id="start" class="tab active">
             <h2>Загрузка Казани...</h2>
+            <p style="font-size: 12px; color: #64748b;">Подключаемся к базе районов</p>
         </div>
 
         <!-- ГЛАВНЫЙ ЭКРАН -->
@@ -56,9 +58,9 @@
         <!-- ДЕЙСТВИЯ -->
         <div id="actions" class="tab">
             <h2>Дела района</h2>
-            <button onclick="mission()">🗡 Миссия (-2⚡)</button>
-            <button onclick="activity()">🎉 Активность (-1⚡)</button>
-            <button onclick="openAttack()" style="background:#f59e0b;">💣 Пакость (-5⚡)</button>
+            <button onclick="mission()">🗡 Миссия (-2⚡)<br><small>+Ловкость</small></button>
+            <button onclick="activity()">🎉 Активность (-1⚡)<br><small>+Харизма</small></button>
+            <button onclick="openAttack()" style="background:#f59e0b;">💣 Пакость (-5⚡)<br><small>+Сила</small></button>
             <div id="attackUI"></div>
             <div class="log" id="logActions"></div>
             <button onclick="openTab('main')" style="background:#475569;">⬅ Назад</button>
@@ -71,6 +73,7 @@
             <button onclick="openTab('main')" style="background:#475569;">⬅ Назад</button>
         </div>
     </div>
+    <!-- Скрипт подключаем в самом конце -->
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,8 +1,13 @@
-// 1. ПОДКЛЮЧЕНИЕ (URL ИСПРАВЛЕН!)
+// 1. ПОДКЛЮЧЕНИЕ
 const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Проверка загрузки библиотеки
+if (typeof supabase === 'undefined') {
+    alert("Ошибка: Библиотека Supabase не загружена! Проверьте ссылки в HTML.");
+}
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let tg = window.Telegram.WebApp;
 tg.expand();
@@ -54,6 +59,7 @@ function updateUI() {
 
     let img = document.getElementById("character");
     if (img) {
+        // Замени на свои прямые ссылки на картинки
         if (points > 100) img.src = "https://imgur.com"; 
         if (points > 500) img.src = "https://imgur.com";
     }
@@ -61,12 +67,14 @@ function updateUI() {
 
 // Работа с базой
 async function save() {
-    await db.from("players").upsert({
-        id, username, points, energy, 
-        max_energy: maxEnergy, 
-        last_energy: lastEnergy, 
-        clan, strength, agility, charisma
-    }, { onConflict: 'id' });
+    try {
+        await db.from("players").upsert({
+            id, username, points, energy, 
+            max_energy: maxEnergy, 
+            last_energy: lastEnergy, 
+            clan, strength, agility, charisma
+        }, { onConflict: 'id' });
+    } catch (e) { console.error("Ошибка сохранения:", e); }
 }
 
 async function load() {
