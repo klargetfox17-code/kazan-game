@@ -2,9 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kazan Clans</title>
-    <!-- Подключаем библиотеки -->
     <script src="https://jsdelivr.net"></script>
     <script src="https://telegram.org"></script>
     <style>
@@ -13,24 +12,20 @@
         .card { background: #1e293b; border-radius: 15px; padding: 15px; margin-bottom: 10px; border: 1px solid #334155; }
         button { width: 100%; padding: 15px; font-size: 16px; margin-top: 10px; border: none; border-radius: 10px; background: #22c55e; color: white; font-weight: bold; cursor: pointer; }
         button:active { transform: scale(0.98); }
-        .log { background: #020617; padding: 10px; height: 80px; overflow-auto; font-size: 12px; border-radius: 10px; color: #94a3b8; text-align: left; margin-top: 10px; }
+        .log { background: #020617; padding: 10px; height: 80px; overflow-y: auto; font-size: 12px; border-radius: 10px; color: #94a3b8; text-align: left; margin-top: 10px; }
         .tab { display: none; }
         .active { display: block; }
         .char-img { width: 120px; height: 120px; margin: 10px auto; display: block; border-radius: 10px; }
-        #error-display { color: #f87171; font-size: 14px; padding: 20px; display: none; }
     </style>
 </head>
 <body>
-    <div id="error-display"></div> <!-- Для отладки -->
-
     <div class="container">
-        <!-- ОКНО СТАРТА -->
+        <!-- ВЫБОР РАЙОНА -->
         <div id="start" class="tab active">
             <h2>Загрузка Казани...</h2>
-            <p>Если это сообщение не исчезает, проверьте подключение к базе.</p>
         </div>
 
-        <!-- ГЛАВНОЕ ОКНО -->
+        <!-- ГЛАВНЫЙ ЭКРАН -->
         <div id="main" class="tab">
             <h2 id="username">@player</h2>
             <img id="character" class="char-img" src="https://imgur.com">
@@ -54,13 +49,13 @@
 
             <button onclick="openTab('actions')" style="background:#3b82f6;">⚡ В город</button>
             <button onclick="loadTop()" style="background:#8b5cf6;">🏆 Рейтинг</button>
-            <button onclick="resetGame()" style="background:#ef4444;margin-top:20px;padding:5px;font-size:11px;">Сброс персонажа</button>
+            <button onclick="resetGame()" style="background:#ef4444;margin-top:20px;padding:5px;font-size:11px;">Сброс</button>
             <div class="log" id="log"></div>
         </div>
 
-        <!-- ОКНО ДЕЙСТВИЙ -->
+        <!-- ДЕЙСТВИЯ -->
         <div id="actions" class="tab">
-            <h2>Районные дела</h2>
+            <h2>Дела района</h2>
             <button onclick="mission()">🗡 Миссия (-2⚡)</button>
             <button onclick="activity()">🎉 Активность (-1⚡)</button>
             <button onclick="openAttack()" style="background:#f59e0b;">💣 Пакость (-5⚡)</button>
@@ -76,7 +71,6 @@
             <button onclick="openTab('main')" style="background:#475569;">⬅ Назад</button>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
