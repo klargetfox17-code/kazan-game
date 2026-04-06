@@ -115,40 +115,46 @@ update();
 }
 
 // ===== ДЕЙСТВИЯ =====
+// ===== ДЕЙСТВИЯ =====
 function mission() {
-if (energy < 2) return log("❌ Нет энергии");
+    if (energy < 2) return log("❌ Нет энергии");
 
-energy -= 2;
+    // Если энергия была полной, начинаем отсчет регена с этого момента
+    if (energy >= maxEnergy) lastEnergy = Date.now();
 
-let gain = 10 + agility;
-if (clan === "Приволжский") gain *= 1.3;
-if (clan === "Советский") gain *= 1.1;
+    energy -= 2;
 
-points += Math.floor(gain);
-agility++;
+    let gain = 10 + agility;
+    if (clan === "Приволжский") gain *= 1.3;
+    if (clan === "Советский") gain *= 1.1;
 
-log(`🗡 Миссия: +${Math.floor(gain)} очков`);
+    points += Math.floor(gain);
+    agility++;
 
-save();
-update();
+    log(`🗡 Миссия: +${Math.floor(gain)} очков`);
+
+    save();
+    update();
 }
 
 function activity() {
-if (energy < 1) return log("❌ Нет энергии");
+    if (energy < 1) return log("❌ Нет энергии");
 
-energy--;
+    if (energy >= maxEnergy) lastEnergy = Date.now();
 
-let gain = 8 + charisma;
-if (clan === "Вахитовский") gain *= 1.3;
-if (clan === "Советский") gain *= 1.1;
+    energy--;
 
-points += Math.floor(gain);
-charisma++;
+    let gain = 8 + charisma;
+    if (clan === "Вахитовский") gain *= 1.3;
+    if (clan === "Советский") gain *= 1.1;
 
-log(`🎉 Активность: +${Math.floor(gain)} очков`);
+    points += Math.floor(gain);
+    charisma++;
 
-save();
-update();
+    log(`🎉 Активность: +${Math.floor(gain)} очков`);
+
+    save();
+    update();
 }
 
 // ===== АТАКА =====
@@ -198,48 +204,50 @@ document.getElementById("attackUI").innerHTML = html;
 }
 
 async function attackPlayer(pid, name) {
+    let cost = clan === "Кировский" ? 4 : 5;
 
-let cost = clan === "Кировский" ? 4 : 5;
+    if (energy < cost) return log("❌ Нет энергии");
 
-if (energy < cost) return log("❌ Нет энергии");
+    if (energy >= maxEnergy) lastEnergy = Date.now();
 
-energy -= cost;
+    energy -= cost;
 
-let { data } = await db
-.from("players")
-.select("points")
-.eq("id", pid)
-.single();
+    let { data } = await db
+        .from("players")
+        .select("points")
+        .eq("id", pid)
+        .single();
 
-if (!data) return log("❌ Игрок не найден");
+    if (!data) return log("❌ Игрок не найден");
 
-let steal = 15 + strength;
+    let steal = 15 + strength;
 
-if (clan === "Авиастрой") steal *= 1.4;
+    if (clan === "Авиастрой") steal *= 1.4;
 
-await db.from("players")
-.update({ points: Math.max(0, data.points - steal) })
-.eq("id", pid);
+    await db.from("players")
+        .update({ points: Math.max(0, data.points - steal) })
+        .eq("id", pid);
 
-points += Math.floor(steal);
-strength++;
+    points += Math.floor(steal);
+    strength++;
 
-log(`💣 Ограбил ${name} на ${Math.floor(steal)}`);
+    log(`💣 Ограбил ${name} на ${Math.floor(steal)}`);
 
-save();
-update();
+    save();
+    update();
 }
 
 async function attackClan() {
+    if (energy < 5) return log("❌ Нет энергии");
 
-if (energy < 5) return log("❌ Нет энергии");
+    if (energy >= maxEnergy) lastEnergy = Date.now();
 
-energy -= 5;
+    energy -= 5;
 
-log(`💣 Удар по району ${selectedClan}`);
+    log(`💣 Удар по району ${selectedClan}`);
 
-save();
-update();
+    save();
+    updateUI(); // или update(), проверь название функции в своем коде
 }
 
 // ===== SAVE =====
@@ -289,7 +297,7 @@ return;
 points = data.points;
 energy = data.energy;
 maxEnergy = data.max_energy;
-lastEnergy = data.last_energy;
+lastEnergy = Number(data.last_energy) || Date.now();
 clan = data.clan;
 
 strength = data.strength;
