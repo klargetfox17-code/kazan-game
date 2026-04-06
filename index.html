@@ -7,7 +7,6 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-
 body {
   background:#0f172a;
   color:white;
@@ -26,10 +25,6 @@ body {
   margin-bottom:10px;
 }
 
-h1, h2, h3 {
-  margin:5px 0;
-}
-
 button {
   width:100%;
   padding:15px;
@@ -38,7 +33,6 @@ button {
   border:none;
   border-radius:10px;
   background:#22c55e;
-  color:black;
 }
 
 .log {
@@ -46,13 +40,12 @@ button {
   padding:10px;
   height:120px;
   overflow:auto;
-  font-size:14px;
 }
 
 .tab { display:none; }
 .active { display:block; }
-
 </style>
+
 </head>
 
 <body>
@@ -75,13 +68,7 @@ button {
 <div class="card">
 <p>Очки: <b id="points"></b></p>
 <p>Энергия: <b id="energy"></b>/<span id="maxEnergy"></span></p>
-<p id="timer"></p>
-</div>
-
-<div class="card">
-<p>💪 Сила: <b id="strength"></b> (усиливает атаки)</p>
-<p>🏃 Ловкость: <b id="agility"></b> (усиливает миссии)</p>
-<p>🗣 Харизма: <b id="charisma"></b> (усиливает активность)</p>
+<p>Следующая энергия через: <b id="timer"></b></p>
 </div>
 
 <button onclick="openTab('actions')">⚡ ДЕЙСТВИЯ</button>
@@ -92,20 +79,23 @@ button {
 </div>
 
 <!-- ДЕЙСТВИЯ -->
-<div id="actionsStats"></div>
-
-<p>
-🗡 Миссия — фарм очков (ловкость) <br>
-💣 Пакость — атака игроков (сила) <br>
-🎉 Активность — стабильный доход (харизма)
-</p>
 <div id="actions" class="tab">
 
 <h2>Действия</h2>
 
-<button onclick="mission()">🗡 Миссия (−2 энергии, +очки)</button>
-<button onclick="attack()">💣 Пакость (−5 энергии, атака)</button>
-<button onclick="activity()">🎉 Активность (−1 энергия)</button>
+<div id="actionsStats"></div>
+
+<p>
+🗡 Миссия — фарм очков (ловкость)<br>
+💣 Пакость — атака игроков (сила)<br>
+🎉 Активность — стабильный доход (харизма)
+</p>
+
+<button onclick="mission()">🗡 Миссия (-2)</button>
+<button onclick="openAttack()">💣 Пакость (-5)</button>
+<button onclick="activity()">🎉 Активность (-1)</button>
+
+<div id="attackUI"></div>
 
 <button onclick="openTab('main')">⬅ Назад</button>
 
