@@ -7,7 +7,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let tg = window.Telegram.WebApp;
 let user = tg.initDataUnsafe?.user;
 
-// стабильный id
+// всегда один и тот же id
 let id = localStorage.getItem("uid");
 
 if (!id) {
@@ -31,13 +31,13 @@ let clan = null;
 
 // ===== РАЙОНЫ =====
 const clans = {
-"Вахитовский": "Активность +30%",
-"Авиастрой": "Атаки +40%",
-"Приволжский": "Миссии +30%",
-"Советский": "Все +10%",
-"Московский": "Энергия быстрее",
-"Кировский": "Атака дешевле (-1)",
-"Ново-Савиновский": "Энергия +3"
+"Вахитовский": "🎉 +30% к активности (быстрый фарм)",
+"Авиастрой": "💣 +40% к атакам (агрессия)",
+"Приволжский": "🗡 +30% к миссиям (рост)",
+"Советский": "📈 +10% ко всему",
+"Московский": "⚡ энергия быстрее x2",
+"Кировский": "💣 атака дешевле (-1)",
+"Ново-Савиновский": "🔋 +3 энергия максимум"
 };
 
 // ===== UI =====
@@ -47,8 +47,17 @@ document.getElementById(id).classList.add("active");
 }
 
 function log(text) {
-let el = document.getElementById("log");
-el.innerHTML = text + "<br>" + el.innerHTML;
+let main = document.getElementById("log");
+let act = document.getElementById("logActions");
+
+if (main) main.innerHTML = text + "<br>" + main.innerHTML;
+if (act) act.innerHTML = text + "<br>" + act.innerHTML;
+}
+
+// ===== RESET =====
+function resetGame(){
+localStorage.clear();
+location.reload();
 }
 
 // ===== ТАЙМЕР =====
@@ -66,7 +75,7 @@ lastEnergy += diff * speed;
 let next = speed - (now - lastEnergy);
 
 document.getElementById("timer").innerText =
-"⏳ " + Math.max(0, Math.floor(next/1000)) + " сек";
+Math.max(0, Math.floor(next/1000)) + " сек";
 }
 
 // ===== СТАРТ =====
@@ -74,7 +83,7 @@ function showStart() {
 let html = "<h2>Выбери район</h2>";
 
 for (let c in clans) {
-html += `<button onclick="selectClan('${c}')">${c}<br>${clans[c]}</button>`;
+html += `<button onclick="selectClan('${c}')">${c}<br><small>${clans[c]}</small></button>`;
 }
 
 document.getElementById("start").innerHTML = html;
@@ -133,7 +142,7 @@ update();
 let selectedClan = null;
 
 function openAttack() {
-let html = "<h3>Куда бьем?</h3>";
+let html = "<h3>Выбери район</h3>";
 
 for (let c in clans) {
 if (c !== clan)
@@ -147,18 +156,18 @@ function selectAttackClan(c) {
 selectedClan = c;
 
 document.getElementById("attackUI").innerHTML = `
-<button onclick="attackClan()">💣 По району</button>
-<button onclick="loadPlayers('${c}')">👤 По игроку</button>
+<button onclick="attackClan()">💣 Удар по району</button>
+<button onclick="loadPlayers('${c}')">👤 Удар по игроку</button>
 `;
 }
 
 async function loadPlayers(c) {
-let { data, error } = await db
+let { data } = await db
 .from("players")
 .select("id, username, points")
 .eq("clan", c);
 
-if (error || !data || data.length === 0) {
+if (!data || data.length === 0) {
 log("❌ Нет игроков");
 return;
 }
@@ -176,6 +185,7 @@ document.getElementById("attackUI").innerHTML = html;
 }
 
 async function attackPlayer(pid, name) {
+
 let cost = clan === "Кировский" ? 4 : 5;
 
 if (energy < cost) return log("❌ Нет энергии");
@@ -202,6 +212,18 @@ points += Math.floor(steal);
 strength++;
 
 log(`💣 Ограбил ${name} на ${Math.floor(steal)}`);
+
+save();
+update();
+}
+
+async function attackClan() {
+
+if (energy < 5) return log("❌ Нет энергии");
+
+energy -= 5;
+
+log(`💣 Удар по району ${selectedClan}`);
 
 save();
 update();
@@ -243,7 +265,8 @@ max_energy:10,
 last_energy:Date.now(),
 strength:1,
 agility:1,
-charisma:1
+charisma:1,
+clan:null
 });
 
 showStart();
@@ -266,7 +289,33 @@ openTab("main");
 update();
 }
 
-// ===== UI UPDATE =====
+// ===== ТОП =====
+async function loadTop() {
+
+openTab("top");
+
+let { data } = await db
+.from("players")
+.select("username, points, clan")
+.order("points", { ascending:false })
+.limit(20);
+
+let html = "";
+
+data.forEach((p,i)=>{
+html += `
+<div class="card">
+#${i+1} ${p.username}<br>
+🏆 ${p.points}<br>
+📍 ${p.clan || "нет"}
+</div>
+`;
+});
+
+document.getElementById("topList").innerHTML = html;
+}
+
+// ===== UPDATE =====
 function update() {
 
 document.getElementById("username").innerText = username;
@@ -277,7 +326,10 @@ document.getElementById("points").innerText = points;
 document.getElementById("energy").innerText = energy;
 document.getElementById("maxEnergy").innerText = maxEnergy;
 
-// только во вкладке действий
+document.getElementById("m_strength").innerText = strength;
+document.getElementById("m_agility").innerText = agility;
+document.getElementById("m_charisma").innerText = charisma;
+
 document.getElementById("actionsStats").innerHTML = `
 💪 Сила: ${strength}<br>
 ⚡ Ловкость: ${agility}<br>

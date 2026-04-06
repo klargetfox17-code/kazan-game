@@ -7,43 +7,13 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body {
-  background:#0f172a;
-  color:white;
-  font-family:sans-serif;
-  margin:0;
-}
-
-.container {
-  padding:15px;
-}
-
-.card {
-  background:#1e293b;
-  border-radius:15px;
-  padding:15px;
-  margin-bottom:10px;
-}
-
-button {
-  width:100%;
-  padding:15px;
-  font-size:18px;
-  margin-top:10px;
-  border:none;
-  border-radius:10px;
-  background:#22c55e;
-}
-
-.log {
-  background:#020617;
-  padding:10px;
-  height:120px;
-  overflow:auto;
-}
-
-.tab { display:none; }
-.active { display:block; }
+body {background:#0f172a;color:white;font-family:sans-serif;}
+.container{padding:15px;}
+.card{background:#1e293b;border-radius:15px;padding:15px;margin-bottom:10px;}
+button{width:100%;padding:15px;font-size:18px;margin-top:10px;border:none;border-radius:10px;background:#22c55e;}
+.log{background:#020617;padding:10px;height:120px;overflow:auto;}
+.tab{display:none;}
+.active{display:block;}
 </style>
 
 </head>
@@ -52,12 +22,9 @@ button {
 
 <div class="container">
 
-<!-- СТАРТ -->
 <div id="start" class="tab active"></div>
 
-<!-- ОСНОВА -->
 <div id="main" class="tab">
-
 <h2 id="username"></h2>
 
 <div class="card">
@@ -66,44 +33,46 @@ button {
 </div>
 
 <div class="card">
-<p>Очки: <b id="points"></b></p>
-<p>Энергия: <b id="energy"></b>/<span id="maxEnergy"></span></p>
-<p>Следующая энергия через: <b id="timer"></b></p>
+💪 <b id="m_strength"></b> |
+⚡ <b id="m_agility"></b> |
+🎭 <b id="m_charisma"></b>
 </div>
 
-<button onclick="openTab('actions')">⚡ ДЕЙСТВИЯ</button>
-<button onclick="loadTop()">🏆 ТОП</button>
+<div class="card">
+Очки: <b id="points"></b><br>
+Энергия: <b id="energy"></b>/<span id="maxEnergy"></span><br>
+⏳ <b id="timer"></b>
+</div>
+
+<button onclick="openTab('actions')">⚡ Действия</button>
+<button onclick="loadTop()">🏆 Топ</button>
+<button onclick="resetGame()">♻️ Сброс</button>
 
 <div class="log" id="log"></div>
-
 </div>
 
-<!-- ДЕЙСТВИЯ -->
 <div id="actions" class="tab">
 
 <h2>Действия</h2>
 
 <div id="actionsStats"></div>
 
-<p>
-🗡 Миссия — фарм очков (ловкость)<br>
-💣 Пакость — атака игроков (сила)<br>
-🎉 Активность — стабильный доход (харизма)
-</p>
+<button onclick="mission()">🗡 Миссия (-2)<br><small>Быстрый рост очков</small></button>
 
-<button onclick="mission()">🗡 Миссия (-2)</button>
-<button onclick="openAttack()">💣 Пакость (-5)</button>
-<button onclick="activity()">🎉 Активность (-1)</button>
+<button onclick="openAttack()">💣 Пакость (-5)<br><small>Грабеж игроков</small></button>
+
+<button onclick="activity()">🎉 Активность (-1)<br><small>Стабильный фарм</small></button>
 
 <div id="attackUI"></div>
+
+<div class="log" id="logActions"></div>
 
 <button onclick="openTab('main')">⬅ Назад</button>
 
 </div>
 
-<!-- ТОП -->
 <div id="top" class="tab">
-<h2>🏆 ТОП игроков</h2>
+<h2>🏆 ТОП</h2>
 <div id="topList"></div>
 <button onclick="openTab('main')">⬅ Назад</button>
 </div>
