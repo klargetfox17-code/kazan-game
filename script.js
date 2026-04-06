@@ -63,20 +63,32 @@ location.reload();
 
 // ===== ТАЙМЕР =====
 function regen() {
-let now = Date.now();
-let speed = clan === "Московский" ? 30000 : 60000;
+    let now = Date.now();
+    let speed = clan === "Московский" ? 30000 : 60000;
 
-let diff = Math.floor((now - lastEnergy) / speed);
+    // Если энергия уже полная, просто держим время актуальным и обнуляем таймер
+    if (energy >= maxEnergy) {
+        lastEnergy = now;
+        document.getElementById("timer").innerText = "Максимум";
+        return;
+    }
 
-if (diff > 0) {
-energy = Math.min(maxEnergy, energy + diff);
-lastEnergy += diff * speed;
-}
+    let diff = Math.floor((now - lastEnergy) / speed);
 
-let next = speed - (now - lastEnergy);
+    if (diff > 0) {
+        energy = Math.min(maxEnergy, energy + diff);
+        lastEnergy += diff * speed;
+        save(); // Сохраняем, что энергия восстановилась
+    }
 
-document.getElementById("timer").innerText =
-Math.max(0, Math.floor(next/1000)) + " сек";
+    let next = speed - (now - lastEnergy);
+    
+    // Отображаем минуты и секунды для красоты
+    let minutes = Math.floor(next / 60000);
+    let seconds = Math.floor((next % 60000) / 1000);
+    
+    document.getElementById("timer").innerText = 
+        `До энергии: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }
 
 // ===== СТАРТ =====
