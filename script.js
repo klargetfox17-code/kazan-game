@@ -118,33 +118,7 @@ charisma++;
 log(`🎉 Активность успешна +${gain}`);
 save(); update();
 }
-async function resetGame(){
 
-// 1. удаляем из базы
-await db.from("players").delete().eq("id", id);
-
-// 2. создаем НОВЫЙ id
-id = "user_" + Math.random().toString(36).substr(2,9);
-localStorage.setItem("uid", id);
-
-// 3. полностью сбрасываем объект игрока
-player = {
-points:0,
-energy:10,
-maxEnergy:10,
-lastEnergy:Date.now(),
-strength:1,
-agility:1,
-charisma:1,
-clan:null
-};
-
-// 4. сохраняем нового игрока в БД
-await save();
-
-// 5. показываем экран выбора района
-showStart();
-}
 // ===== АТАКА =====
 let selectedClan=null;
 
@@ -310,7 +284,41 @@ if(!clan) return showStart();
 openTab("main");
 update();
 }
+// ===== RESET (РАБОЧИЙ) =====
+async function resetGame(){
 
+// 1. удаляем игрока из базы
+await db.from("players").delete().eq("id", id);
+
+// 2. создаём новый id
+id = "user_" + Math.random().toString(36).substr(2,9);
+localStorage.setItem("uid", id);
+
+// 3. сбрасываем ВСЕ данные
+points = 0;
+energy = 10;
+maxEnergy = 10;
+lastEnergy = Date.now();
+
+strength = 1;
+agility = 1;
+charisma = 1;
+
+clan = null;
+
+// 4. сразу создаём нового игрока в базе
+await save();
+
+// 5. очищаем логи (чтобы не было мусора)
+let a = document.getElementById("attackLog");
+let b = document.getElementById("actionsLog");
+
+if(a) a.innerHTML = "";
+if(b) b.innerHTML = "";
+
+// 6. возвращаем на стартовый экран
+showStart();
+}
 // ===== UPDATE =====
 function update(){
 
