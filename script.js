@@ -3,6 +3,8 @@ const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
 
 
+
+
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== USER =====
@@ -20,6 +22,17 @@ let username = tgUser?.username || "Игрок_" + id.slice(-4);
 let points=0, energy=10, maxEnergy=10, lastEnergy=Date.now();
 let strength=1, agility=1, charisma=1;
 let clan=null;
+
+// ===== КЛАНЫ =====
+const clans = {
+"Вахитовский": "🎉 Бонус: больше очков за активность",
+"Авиастрой": "💣 Бонус: сильнее атаки",
+"Приволжский": "🗡 Бонус: больше очков за миссии",
+"Советский": "📈 Бонус: небольшой буст ко всему",
+"Московский": "⚡ Бонус: энергия быстрее восстанавливается",
+"Кировский": "💣 Бонус: атака дешевле",
+"Ново-Савиновский": "🔋 Бонус: больше максимум энергии"
+};
 
 // ===== LVL =====
 function getLevel(){
@@ -41,9 +54,13 @@ document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 }
 
+// ===== LOG =====
 function log(text){
-document.getElementById("attackLog").innerHTML =
-text + "<br>" + document.getElementById("attackLog").innerHTML;
+let a = document.getElementById("attackLog");
+let b = document.getElementById("actionsLog");
+
+if(a) a.innerHTML = text + "<br>" + a.innerHTML;
+if(b) b.innerHTML = text + "<br>" + b.innerHTML;
 }
 
 // ===== ТАЙМЕР =====
@@ -68,7 +85,7 @@ document.getElementById("timer").innerText=Math.floor(next/1000)+" сек";
 
 // ===== ДЕЙСТВИЯ =====
 function mission(){
-if(energy<2) return;
+if(energy<2) return log("❌ Нет энергии");
 
 energy-=2;
 
@@ -81,12 +98,12 @@ let gain=10+agility;
 points+=gain;
 agility++;
 
-log(`🗡 Успех +${gain}`);
+log(`🗡 Миссия успешна +${gain}`);
 save(); update();
 }
 
 function activity(){
-if(energy<1) return;
+if(energy<1) return log("❌ Нет энергии");
 
 energy--;
 
@@ -99,7 +116,7 @@ let gain=8+charisma;
 points+=gain;
 charisma++;
 
-log(`🎉 Успех +${gain}`);
+log(`🎉 Активность успешна +${gain}`);
 save(); update();
 }
 
@@ -125,12 +142,12 @@ selectedClan=c;
 document.getElementById("attackUI").innerHTML=`
 <button onclick="attackClan()">
 💣 Удар по району (-5 энергии)<br>
-<small>Шанс зависит от СИЛЫ</small>
+<small>Ослабляет район (шанс от СИЛЫ)</small>
 </button>
 
 <button onclick="loadPlayers('${c}')">
 👤 Удар по игроку (-5 энергии)<br>
-<small>Грабёж игрока</small>
+<small>Грабишь игрока и крадёшь очки</small>
 </button>
 
 <button onclick="openTab('actions')">⬅ Назад</button>
@@ -139,8 +156,7 @@ document.getElementById("attackUI").innerHTML=`
 
 async function loadPlayers(c){
 let {data}=await db.from("players")
-.select("id,username,points,strength,agility,charisma")
-.eq("clan",c);
+.select("*").eq("clan",c);
 
 let html="<h2>Цели</h2>";
 
@@ -149,7 +165,7 @@ if(p.id!==id){
 let lvl=1+Math.floor((p.strength+p.agility+p.charisma)/10);
 
 html+=`<button onclick="attackPlayer('${p.id}','${p.username}')">
-${p.username} (lvl ${lvl}) - ${p.points}
+${p.username} (${p.clan}) lvl ${lvl} - ${p.points}
 </button>`;
 }
 });
@@ -158,7 +174,7 @@ document.getElementById("attackUI").innerHTML=html;
 }
 
 async function attackPlayer(pid,name){
-if(energy<5) return;
+if(energy<5) return log("❌ Нет энергии");
 
 energy-=5;
 
@@ -180,12 +196,11 @@ points+=steal;
 strength++;
 
 log(`💣 Ограблен ${name} +${steal}`);
-
 save(); update();
 }
 
 function attackClan(){
-if(energy<5) return;
+if(energy<5) return log("❌ Нет энергии");
 
 energy-=5;
 
@@ -198,21 +213,37 @@ log(`💣 Удар по району ${selectedClan}`);
 save(); update();
 }
 
-// ===== ТОП =====
+// ===== ТОП ПО КЛАНАМ =====
 async function showTop(){
 openTab("top");
 
-let {data}=await db.from("players")
-.select("*")
-.order("points",{ascending:false})
-.limit(20);
+let {data}=await db.from("players").select("*");
 
-let html="<h2>🏆 ТОП</h2>";
+let grouped = {};
 
-data.forEach((p,i)=>{
-let lvl=1+Math.floor((p.strength+p.agility+p.charisma)/10);
-html+=`<div>${i+1}. ${p.username} (lvl ${lvl}) - ${p.points}</div>`;
+data.forEach(p=>{
+if(!grouped[p.clan]) grouped[p.clan]=[];
+grouped[p.clan].push(p);
 });
+
+let html="<h2>🏆 ТОП по кланам</h2>";
+
+for(let c in grouped){
+
+html+=`<h3>${c}</h3>`;
+
+grouped[c]
+.sort((a,b)=>b.points-a.points)
+.slice(0,10)
+.forEach((p,i)=>{
+
+let lvl=1+Math.floor((p.strength+p.agility+p.charisma)/10);
+
+html+=`<div>
+${i+1}. ${p.username} (lvl ${lvl}) - ${p.points}
+</div>`;
+});
+}
 
 document.getElementById("topList").innerHTML=html;
 }
@@ -227,6 +258,7 @@ last_energy:lastEnergy,clan,strength,agility,charisma
 
 // ===== LOAD =====
 async function load(){
+
 let {data}=await db.from("players")
 .select("*").eq("id",id).maybeSingle();
 
@@ -259,6 +291,7 @@ function update(){
 
 document.getElementById("username").innerText=username;
 document.getElementById("clan").innerText=clan;
+document.getElementById("bonus").innerText=clans[clan];
 
 document.getElementById("lvl").innerText=getLevel();
 
