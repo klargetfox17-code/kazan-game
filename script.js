@@ -6,17 +6,21 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== USER =====
 let tg = window.Telegram.WebApp;
-let user = tg.initDataUnsafe?.user;
+let tgUser = tg.initDataUnsafe?.user;
 
-// всегда один и тот же id
-let id = localStorage.getItem("uid");
+let id;
 
-if (!id) {
-  id = user?.id ? "tg_" + user.id : "user_" + Math.random().toString(36).substr(2, 9);
-  localStorage.setItem("uid", id);
+if (tgUser && tgUser.id) {
+  id = "tg_" + tgUser.id;
+} else {
+  id = localStorage.getItem("uid");
+  if (!id) {
+    id = "user_" + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem("uid", id);
+  }
 }
 
-let username = user?.username || "Игрок_" + id.slice(-4);
+let username = tgUser?.username || "Игрок_" + id.slice(-4);
 
 // ===== ДАННЫЕ =====
 let points = 0;
@@ -32,13 +36,13 @@ let clan = null;
 
 // ===== РАЙОНЫ =====
 const clans = {
-"Вахитовский": "🎉 +30% к активности (быстрый фарм)",
-"Авиастрой": "💣 +40% к атакам (агрессия)",
-"Приволжский": "🗡 +30% к миссиям (рост)",
+"Вахитовский": "🎉 +30% к активности (больше очков за лёгкие действия)",
+"Авиастрой": "💣 +40% к атаке (грабеж сильнее)",
+"Приволжский": "🗡 +30% к миссиям (быстрый рост)",
 "Советский": "📈 +10% ко всему",
-"Московский": "⚡ энергия быстрее x2",
-"Кировский": "💣 атака дешевле (-1)",
-"Ново-Савиновский": "🔋 +3 энергия максимум"
+"Московский": "⚡ энергия восстанавливается быстрее",
+"Кировский": "💣 атака дешевле (-1 энергия)",
+"Ново-Савиновский": "🔋 +3 к максимуму энергии"
 };
 
 // ===== UI =====
@@ -47,6 +51,7 @@ document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 }
 
+// ===== LOG =====
 function log(text) {
 let main = document.getElementById("log");
 let act = document.getElementById("logActions");
@@ -56,30 +61,36 @@ if (act) act.innerHTML = text + "<br>" + act.innerHTML;
 }
 
 // ===== RESET =====
-function resetGame(){
+async function resetGame(){
 localStorage.clear();
+
+await db.from("players").delete().eq("id", id);
+
 location.reload();
 }
 
-// ===== ТАЙМЕР =====
+// ===== ТАЙМЕР (ФИКС) =====
 function regen() {
 let now = Date.now();
 let speed = clan === "Московский" ? 30000 : 60000;
+
+if (now < lastEnergy) lastEnergy = now; // фикс бага времени
 
 let diff = Math.floor((now - lastEnergy) / speed);
 
 if (diff > 0) {
 energy = Math.min(maxEnergy, energy + diff);
-lastEnergy += diff * speed;
+lastEnergy = now;
 }
 
 let next = speed - (now - lastEnergy);
+if (next < 0) next = speed;
 
 document.getElementById("timer").innerText =
-Math.max(0, Math.floor(next/1000)) + " сек";
+Math.floor(next/1000) + " сек";
 }
 
-// ===== СТАРТ =====
+// ===== START =====
 function showStart() {
 let html = "<h2>Выбери район</h2>";
 
@@ -90,7 +101,7 @@ html += `<button onclick="selectClan('${c}')">${c}<br><small>${clans[c]}</small>
 document.getElementById("start").innerHTML = html;
 }
 
-// ===== ВЫБОР =====
+// ===== SELECT =====
 async function selectClan(c) {
 clan = c;
 
@@ -110,15 +121,13 @@ energy -= 2;
 
 let gain = 10 + agility;
 if (clan === "Приволжский") gain *= 1.3;
-if (clan === "Советский") gain *= 1.1;
 
 points += Math.floor(gain);
 agility++;
 
 log(`🗡 Миссия: +${Math.floor(gain)} очков`);
 
-save();
-update();
+save(); update();
 }
 
 function activity() {
@@ -128,21 +137,21 @@ energy--;
 
 let gain = 8 + charisma;
 if (clan === "Вахитовский") gain *= 1.3;
-if (clan === "Советский") gain *= 1.1;
 
 points += Math.floor(gain);
 charisma++;
 
 log(`🎉 Активность: +${Math.floor(gain)} очков`);
 
-save();
-update();
+save(); update();
 }
 
 // ===== АТАКА =====
 let selectedClan = null;
 
 function openAttack() {
+openTab("attack");
+
 let html = "<h3>Выбери район</h3>";
 
 for (let c in clans) {
@@ -159,6 +168,7 @@ selectedClan = c;
 document.getElementById("attackUI").innerHTML = `
 <button onclick="attackClan()">💣 Удар по району</button>
 <button onclick="loadPlayers('${c}')">👤 Удар по игроку</button>
+<button onclick="openTab('actions')">⬅ Назад</button>
 `;
 }
 
@@ -168,12 +178,7 @@ let { data } = await db
 .select("id, username, points")
 .eq("clan", c);
 
-if (!data || data.length === 0) {
-log("❌ Нет игроков");
-return;
-}
-
-let html = "<h3>Цель:</h3>";
+let html = "<h3>Выбери игрока</h3>";
 
 data.forEach(p=>{
 if (p.id !== id)
@@ -182,11 +187,12 @@ ${p.username} (${p.points})
 </button>`;
 });
 
+html += `<button onclick="openTab('actions')">⬅ Назад</button>`;
+
 document.getElementById("attackUI").innerHTML = html;
 }
 
 async function attackPlayer(pid, name) {
-
 let cost = clan === "Кировский" ? 4 : 5;
 
 if (energy < cost) return log("❌ Нет энергии");
@@ -199,8 +205,6 @@ let { data } = await db
 .eq("id", pid)
 .single();
 
-if (!data) return log("❌ Игрок не найден");
-
 let steal = 15 + strength;
 
 if (clan === "Авиастрой") steal *= 1.4;
@@ -212,22 +216,19 @@ await db.from("players")
 points += Math.floor(steal);
 strength++;
 
-log(`💣 Ограбил ${name} на ${Math.floor(steal)}`);
+log(`💣 Ограбил ${name}`);
 
-save();
-update();
+save(); update();
 }
 
-async function attackClan() {
-
+function attackClan() {
 if (energy < 5) return log("❌ Нет энергии");
 
 energy -= 5;
 
 log(`💣 Удар по району ${selectedClan}`);
 
-save();
-update();
+save(); update();
 }
 
 // ===== SAVE =====
@@ -243,7 +244,7 @@ clan,
 strength,
 agility,
 charisma
-}, { onConflict: "id" });
+}, { onConflict:"id" });
 }
 
 // ===== LOAD =====
@@ -290,32 +291,6 @@ openTab("main");
 update();
 }
 
-// ===== ТОП =====
-async function loadTop() {
-
-openTab("top");
-
-let { data } = await db
-.from("players")
-.select("username, points, clan")
-.order("points", { ascending:false })
-.limit(20);
-
-let html = "";
-
-data.forEach((p,i)=>{
-html += `
-<div class="card">
-#${i+1} ${p.username}<br>
-🏆 ${p.points}<br>
-📍 ${p.clan || "нет"}
-</div>
-`;
-});
-
-document.getElementById("topList").innerHTML = html;
-}
-
 // ===== UPDATE =====
 function update() {
 
@@ -332,6 +307,7 @@ document.getElementById("m_agility").innerText = agility;
 document.getElementById("m_charisma").innerText = charisma;
 
 document.getElementById("actionsStats").innerHTML = `
+Энергия: ${energy}/${maxEnergy}<br>
 💪 Сила: ${strength}<br>
 ⚡ Ловкость: ${agility}<br>
 🎭 Харизма: ${charisma}
