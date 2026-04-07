@@ -2,6 +2,7 @@
 const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
 
+
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== USER =====
@@ -36,13 +37,13 @@ let clan = null;
 
 // ===== РАЙОНЫ =====
 const clans = {
-"Вахитовский": "🎉 +30% к активности (больше очков за лёгкие действия)",
-"Авиастрой": "💣 +40% к атаке (грабеж сильнее)",
-"Приволжский": "🗡 +30% к миссиям (быстрый рост)",
+"Вахитовский": "🎉 +30% к активности",
+"Авиастрой": "💣 +40% к атаке",
+"Приволжский": "🗡 +30% к миссиям",
 "Советский": "📈 +10% ко всему",
-"Московский": "⚡ энергия восстанавливается быстрее",
-"Кировский": "💣 атака дешевле (-1 энергия)",
-"Ново-Савиновский": "🔋 +3 к максимуму энергии"
+"Московский": "⚡ быстрее энергия",
+"Кировский": "💣 атака дешевле",
+"Ново-Савиновский": "🔋 +3 энергия"
 };
 
 // ===== UI =====
@@ -53,28 +54,23 @@ document.getElementById(id).classList.add("active");
 
 // ===== LOG =====
 function log(text) {
-let main = document.getElementById("log");
-let act = document.getElementById("logActions");
-
-if (main) main.innerHTML = text + "<br>" + main.innerHTML;
-if (act) act.innerHTML = text + "<br>" + act.innerHTML;
+let el = document.getElementById("attackLog");
+if (el) el.innerHTML = text + "<br>" + el.innerHTML;
 }
 
 // ===== RESET =====
 async function resetGame(){
 localStorage.clear();
-
 await db.from("players").delete().eq("id", id);
-
 location.reload();
 }
 
-// ===== ТАЙМЕР (ФИКС) =====
+// ===== ТАЙМЕР =====
 function regen() {
 let now = Date.now();
 let speed = clan === "Московский" ? 30000 : 60000;
 
-if (now < lastEnergy) lastEnergy = now; // фикс бага времени
+if (now < lastEnergy) lastEnergy = now;
 
 let diff = Math.floor((now - lastEnergy) / speed);
 
@@ -88,6 +84,25 @@ if (next < 0) next = speed;
 
 document.getElementById("timer").innerText =
 Math.floor(next/1000) + " сек";
+}
+
+// ===== ТОП =====
+async function showTop(){
+openTab("top");
+
+let { data } = await db
+.from("players")
+.select("username, points, clan")
+.order("points", { ascending:false })
+.limit(20);
+
+let html = "<h2>🏆 ТОП игроков</h2>";
+
+data.forEach((p,i)=>{
+html += `<div>${i+1}. ${p.username} (${p.clan}) - ${p.points}</div>`;
+});
+
+document.getElementById("topList").innerHTML = html;
 }
 
 // ===== START =====
@@ -104,44 +119,32 @@ document.getElementById("start").innerHTML = html;
 // ===== SELECT =====
 async function selectClan(c) {
 clan = c;
-
 if (c === "Ново-Савиновский") maxEnergy += 3;
 
 await save();
-
 openTab("main");
 update();
 }
 
 // ===== ДЕЙСТВИЯ =====
 function mission() {
-if (energy < 2) return log("❌ Нет энергии");
+if (energy < 2) return;
 
 energy -= 2;
-
 let gain = 10 + agility;
-if (clan === "Приволжский") gain *= 1.3;
-
-points += Math.floor(gain);
+points += gain;
 agility++;
-
-log(`🗡 Миссия: +${Math.floor(gain)} очков`);
 
 save(); update();
 }
 
 function activity() {
-if (energy < 1) return log("❌ Нет энергии");
+if (energy < 1) return;
 
 energy--;
-
 let gain = 8 + charisma;
-if (clan === "Вахитовский") gain *= 1.3;
-
-points += Math.floor(gain);
+points += gain;
 charisma++;
-
-log(`🎉 Активность: +${Math.floor(gain)} очков`);
 
 save(); update();
 }
@@ -152,7 +155,7 @@ let selectedClan = null;
 function openAttack() {
 openTab("attack");
 
-let html = "<h3>Выбери район</h3>";
+let html = "<h2>Выбери район</h2>";
 
 for (let c in clans) {
 if (c !== clan)
@@ -166,8 +169,16 @@ function selectAttackClan(c) {
 selectedClan = c;
 
 document.getElementById("attackUI").innerHTML = `
-<button onclick="attackClan()">💣 Удар по району</button>
-<button onclick="loadPlayers('${c}')">👤 Удар по игроку</button>
+<button onclick="attackClan()">
+💣 Удар по району (-5 энергии)<br>
+<small>Ослабляет весь район (глобальный удар)</small>
+</button>
+
+<button onclick="loadPlayers('${c}')">
+👤 Удар по игроку (-5 энергии)<br>
+<small>Грабишь игрока и забираешь очки</small>
+</button>
+
 <button onclick="openTab('actions')">⬅ Назад</button>
 `;
 }
@@ -178,7 +189,7 @@ let { data } = await db
 .select("id, username, points")
 .eq("clan", c);
 
-let html = "<h3>Выбери игрока</h3>";
+let html = "<h2>Выбери цель</h2>";
 
 data.forEach(p=>{
 if (p.id !== id)
@@ -193,11 +204,9 @@ document.getElementById("attackUI").innerHTML = html;
 }
 
 async function attackPlayer(pid, name) {
-let cost = clan === "Кировский" ? 4 : 5;
+if (energy < 5) return;
 
-if (energy < cost) return log("❌ Нет энергии");
-
-energy -= cost;
+energy -= 5;
 
 let { data } = await db
 .from("players")
@@ -207,22 +216,20 @@ let { data } = await db
 
 let steal = 15 + strength;
 
-if (clan === "Авиастрой") steal *= 1.4;
-
 await db.from("players")
 .update({ points: Math.max(0, data.points - steal) })
 .eq("id", pid);
 
-points += Math.floor(steal);
+points += steal;
 strength++;
 
-log(`💣 Ограбил ${name}`);
+log(`💣 Ограблен ${name} (-${steal})`);
 
 save(); update();
 }
 
 function attackClan() {
-if (energy < 5) return log("❌ Нет энергии");
+if (energy < 5) return;
 
 energy -= 5;
 
@@ -257,7 +264,6 @@ let { data } = await db
 .maybeSingle();
 
 if (!data) {
-
 await db.from("players").insert({
 id,
 username,
@@ -270,7 +276,6 @@ agility:1,
 charisma:1,
 clan:null
 });
-
 showStart();
 return;
 }
