@@ -2,25 +2,50 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body {background:#0f172a;color:white;font-family:sans-serif;font-size:22px;}
-.container{padding:15px;max-width:500px;margin:auto;}
-.card{background:#1e293b;border-radius:15px;padding:20px;margin-bottom:15px;}
+body{
+background:#0f172a;
+color:white;
+font-family:sans-serif;
+font-size:26px;
+}
+
+.container{
+max-width:500px;
+margin:auto;
+padding:20px;
+}
+
 button{
 width:100%;
-padding:20px;
-font-size:22px;
-margin-top:10px;
+padding:25px;
+margin-top:15px;
+font-size:26px;
 border:none;
-border-radius:12px;
+border-radius:15px;
 background:#22c55e;
 }
+
+.card{
+background:#1e293b;
+padding:20px;
+border-radius:15px;
+margin-bottom:15px;
+}
+
 .tab{display:none;}
 .active{display:block;}
-.log{background:#020617;padding:10px;height:120px;overflow:auto;}
+
+.log{
+background:black;
+padding:10px;
+height:150px;
+overflow:auto;
+}
 </style>
 
 </head>
@@ -34,7 +59,6 @@ background:#22c55e;
 <div id="main" class="tab">
 
 <h1 id="username"></h1>
-<h2>Уровень: <span id="lvl"></span></h2>
 
 <div class="card">
 <h2 id="clan"></h2>
@@ -42,9 +66,9 @@ background:#22c55e;
 </div>
 
 <div class="card">
-💪 <span id="m_strength"></span> |
-⚡ <span id="m_agility"></span> |
-🎭 <span id="m_charisma"></span>
+💪 Сила: <span id="strength"></span><br>
+⚡ Ловкость: <span id="agility"></span><br>
+🎭 Харизма: <span id="charisma"></span>
 </div>
 
 <div class="card">
@@ -54,40 +78,38 @@ background:#22c55e;
 </div>
 
 <button onclick="openTab('actions')">⚡ Действия</button>
-<button onclick="showClanTop()">🏆 Районы</button>
+<button onclick="openAttack()">💣 Атака</button>
+<button onclick="showTop()">🏆 ТОП игроков</button>
 
-<button onclick="resetGame()" style="background:#ef4444;">
-Сброс
+<button onclick="resetGame()" style="background:red">
+Сбросить игру
 </button>
 
 </div>
 
 <div id="actions" class="tab">
 
-<div id="actionsStats"></div>
-
-<button onclick="mission()">🗡 Миссия (-2)</button>
-<button onclick="openAttack()">💣 Атака (-5)</button>
-<button onclick="activity()">🎉 Активность (-1)</button>
+<button onclick="mission()">🗡 Миссия (-2 энергия)</button>
+<button onclick="activity()">🎉 Активность (-1 энергия)</button>
 
 <div class="log" id="actionsLog"></div>
 
-<button onclick="openTab('main')">⬅</button>
+<button onclick="openTab('main')">⬅ Назад</button>
 
 </div>
 
 <div id="attack" class="tab">
 <div id="attackUI"></div>
-<div class="log" id="attackLog"></div>
 </div>
 
-<div id="clans" class="tab">
-<div id="clanList"></div>
-<button onclick="openTab('main')">⬅</button>
+<div id="top" class="tab">
+<div id="topList"></div>
+<button onclick="openTab('main')">⬅ Назад</button>
 </div>
 
 </div>
 
 <script src="script.js"></script>
+
 </body>
 </html>
