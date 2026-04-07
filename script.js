@@ -3,8 +3,6 @@ const SUPABASE_URL = "https://ddmwufcuskblflvuuixo.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRkbXd1ZmN1c2tibGZsdnV1aXhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MDIxOTIsImV4cCI6MjA5MDk3ODE5Mn0.pKutYZa4eJ3qXkmeZrJ-VswZOxTj992lRPhdW41Un0E";
 
 
-
-
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== USER =====
@@ -18,34 +16,39 @@ localStorage.setItem("uid", id);
 
 let username = tgUser?.username || "Игрок_" + id.slice(-4);
 
-// ===== ДАННЫЕ =====
+// ===== DATA =====
 let points=0, energy=10, maxEnergy=10, lastEnergy=Date.now();
 let strength=1, agility=1, charisma=1;
 let clan=null;
 
-// ===== КЛАНЫ =====
-const clans = {
-"Вахитовский": "🎉 Бонус: больше очков за активность",
-"Авиастрой": "💣 Бонус: сильнее атаки",
-"Приволжский": "🗡 Бонус: больше очков за миссии",
-"Советский": "📈 Бонус: небольшой буст ко всему",
-"Московский": "⚡ Бонус: энергия быстрее восстанавливается",
-"Кировский": "💣 Бонус: атака дешевле",
-"Ново-Савиновский": "🔋 Бонус: больше максимум энергии"
+// ===== CLANS =====
+const clansInfo = {
+"Вахитовский": "🎉 Активность даёт +30% очков",
+"Авиастрой": "💣 Атаки наносят +40% урона",
+"Приволжский": "🗡 Миссии дают +30% очков",
+"Советский": "📈 +10% ко всем наградам",
+"Московский": "⚡ энергия восстанавливается в 2 раза быстрее",
+"Кировский": "💣 атаки дешевле (-1 энергия)",
+"Ново-Савиновский": "🔋 +3 к максимуму энергии"
 };
 
-// ===== LVL =====
+// ===== LEVEL =====
 function getLevel(){
-return 1 + Math.floor((strength + agility + charisma)/10);
+return 1 + Math.floor((strength+agility+charisma)/10);
 }
 
-// ===== ШАНС =====
+// ===== CHANCE =====
 function chance(stat){
 return Math.min(95, 60 + stat*2);
 }
 
-function roll(stat){
-return Math.random()*100 < chance(stat);
+// ===== DEFENCE =====
+function defence(){
+return charisma * 1.5;
+}
+
+function roll(stat, enemyDef=0){
+return Math.random()*100 < (chance(stat) - enemyDef);
 }
 
 // ===== UI =====
@@ -54,16 +57,21 @@ document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
 document.getElementById(id).classList.add("active");
 }
 
-// ===== LOG =====
 function log(text){
-let a = document.getElementById("attackLog");
-let b = document.getElementById("actionsLog");
-
-if(a) a.innerHTML = text + "<br>" + a.innerHTML;
-if(b) b.innerHTML = text + "<br>" + b.innerHTML;
+["actionsLog","attackLog"].forEach(id=>{
+let el=document.getElementById(id);
+if(el) el.innerHTML=text+"<br>"+el.innerHTML;
+});
 }
 
-// ===== ТАЙМЕР =====
+// ===== RESET (ФИКС) =====
+async function resetGame(){
+await db.from("players").delete().eq("id",id);
+localStorage.removeItem("uid");
+location.reload();
+}
+
+// ===== ENERGY =====
 function regen(){
 let now=Date.now();
 let speed = clan==="Московский"?30000:60000;
@@ -83,56 +91,62 @@ if(next<0) next=speed;
 document.getElementById("timer").innerText=Math.floor(next/1000)+" сек";
 }
 
-// ===== ДЕЙСТВИЯ =====
-function mission(){
+// ===== ACTIONS =====
+async function mission(){
 if(energy<2) return log("❌ Нет энергии");
 
 energy-=2;
 
 if(!roll(agility)){
-log("❌ Миссия провалена");
+log("❌ Провал миссии");
 return save();
 }
 
 let gain=10+agility;
-points+=gain;
+if(clan==="Приволжский") gain*=1.3;
+
+points+=Math.floor(gain);
 agility++;
 
-log(`🗡 Миссия успешна +${gain}`);
+await db.rpc("add_clan_points",{c:clan,val:gain});
+
+log(`🗡 +${Math.floor(gain)} очков`);
 save(); update();
 }
 
-function activity(){
+async function activity(){
 if(energy<1) return log("❌ Нет энергии");
 
 energy--;
 
 if(!roll(charisma)){
-log("❌ Активность провалена");
+log("❌ Провал активности");
 return save();
 }
 
 let gain=8+charisma;
-points+=gain;
+if(clan==="Вахитовский") gain*=1.3;
+
+points+=Math.floor(gain);
 charisma++;
 
-log(`🎉 Активность успешна +${gain}`);
+await db.rpc("add_clan_points",{c:clan,val:gain});
+
+log(`🎉 +${Math.floor(gain)} очков`);
 save(); update();
 }
 
-// ===== АТАКА =====
+// ===== ATTACK =====
 let selectedClan=null;
 
 function openAttack(){
 openTab("attack");
 
 let html="<h2>Выбери район</h2>";
-
-for(let c in clans){
+for(let c in clansInfo){
 if(c!==clan)
 html+=`<button onclick="selectAttackClan('${c}')">${c}</button>`;
 }
-
 document.getElementById("attackUI").innerHTML=html;
 }
 
@@ -141,39 +155,20 @@ selectedClan=c;
 
 document.getElementById("attackUI").innerHTML=`
 <button onclick="attackClan()">
-💣 Удар по району (-5 энергии)<br>
-<small>Ослабляет район (шанс от СИЛЫ)</small>
+💣 Удар по району (-5)<br>
+<small>Ослабляет район и даёт очки твоему</small>
 </button>
 
 <button onclick="loadPlayers('${c}')">
-👤 Удар по игроку (-5 энергии)<br>
-<small>Грабишь игрока и крадёшь очки</small>
+👤 Ограбить игрока (-5)<br>
+<small>Кража очков с учётом защиты</small>
 </button>
 
 <button onclick="openTab('actions')">⬅ Назад</button>
 `;
 }
 
-async function loadPlayers(c){
-let {data}=await db.from("players")
-.select("*").eq("clan",c);
-
-let html="<h2>Цели</h2>";
-
-data.forEach(p=>{
-if(p.id!==id){
-let lvl=1+Math.floor((p.strength+p.agility+p.charisma)/10);
-
-html+=`<button onclick="attackPlayer('${p.id}','${p.username}')">
-${p.username} (${p.clan}) lvl ${lvl} - ${p.points}
-</button>`;
-}
-});
-
-document.getElementById("attackUI").innerHTML=html;
-}
-
-async function attackPlayer(pid,name){
+async function attackClan(){
 if(energy<5) return log("❌ Нет энергии");
 
 energy-=5;
@@ -183,69 +178,70 @@ log("❌ Атака провалена");
 return save();
 }
 
-let {data}=await db.from("players")
-.select("points").eq("id",pid).single();
+let dmg=20+strength;
+
+await db.rpc("add_clan_points",{c:selectedClan,val:-dmg});
+await db.rpc("add_clan_points",{c:clan,val:dmg});
+
+log(`💣 Район ${selectedClan} потерял ${dmg}`);
+save(); update();
+}
+
+async function loadPlayers(c){
+let {data}=await db.from("players").select("*").eq("clan",c);
+
+let html="<h2>Цели</h2>";
+
+data.forEach(p=>{
+if(p.id!==id){
+let lvl=1+Math.floor((p.strength+p.agility+p.charisma)/10);
+html+=`<button onclick="attackPlayer('${p.id}')">
+${p.username} lvl ${lvl} (${p.points})
+</button>`;
+}
+});
+
+document.getElementById("attackUI").innerHTML=html;
+}
+
+async function attackPlayer(pid){
+if(energy<5) return log("❌ Нет энергии");
+
+energy-=5;
+
+let {data:enemy}=await db.from("players").select("*").eq("id",pid).single();
+
+if(!roll(strength, enemy.charisma*1.5)){
+log("🛡 Игрок защитился");
+return save();
+}
 
 let steal=15+strength;
 
 await db.from("players")
-.update({points:Math.max(0,data.points-steal)})
+.update({points:Math.max(0,enemy.points-steal)})
 .eq("id",pid);
 
 points+=steal;
 strength++;
 
-log(`💣 Ограблен ${name} +${steal}`);
+log(`💣 Успех! +${steal}`);
 save(); update();
 }
 
-function attackClan(){
-if(energy<5) return log("❌ Нет энергии");
+// ===== CLAN TOP =====
+async function showClanTop(){
+openTab("clans");
 
-energy-=5;
+let {data}=await db.from("clans").select("*").order("points",{ascending:false});
 
-if(!roll(strength)){
-log("❌ Атака района провалена");
-return save();
-}
+let html="<h2>🏆 Районы</h2>";
 
-log(`💣 Удар по району ${selectedClan}`);
-save(); update();
-}
-
-// ===== ТОП ПО КЛАНАМ =====
-async function showTop(){
-openTab("top");
-
-let {data}=await db.from("players").select("*");
-
-let grouped = {};
-
-data.forEach(p=>{
-if(!grouped[p.clan]) grouped[p.clan]=[];
-grouped[p.clan].push(p);
+data.forEach((c,i)=>{
+html+=`<div>${i+1}. ${c.name} — ${c.points}</div>`;
 });
 
-let html="<h2>🏆 ТОП по кланам</h2>";
-
-for(let c in grouped){
-
-html+=`<h3>${c}</h3>`;
-
-grouped[c]
-.sort((a,b)=>b.points-a.points)
-.slice(0,10)
-.forEach((p,i)=>{
-
-let lvl=1+Math.floor((p.strength+p.agility+p.charisma)/10);
-
-html+=`<div>
-${i+1}. ${p.username} (lvl ${lvl}) - ${p.points}
-</div>`;
-});
-}
-
-document.getElementById("topList").innerHTML=html;
+document.getElementById("clanList").innerHTML=html;
 }
 
 // ===== SAVE =====
@@ -258,9 +254,7 @@ last_energy:lastEnergy,clan,strength,agility,charisma
 
 // ===== LOAD =====
 async function load(){
-
-let {data}=await db.from("players")
-.select("*").eq("id",id).maybeSingle();
+let {data}=await db.from("players").select("*").eq("id",id).maybeSingle();
 
 if(!data){
 await db.from("players").insert({
@@ -288,11 +282,9 @@ update();
 
 // ===== UPDATE =====
 function update(){
-
 document.getElementById("username").innerText=username;
 document.getElementById("clan").innerText=clan;
-document.getElementById("bonus").innerText=clans[clan];
-
+document.getElementById("bonus").innerText=clansInfo[clan];
 document.getElementById("lvl").innerText=getLevel();
 
 document.getElementById("points").innerText=points;
@@ -305,8 +297,7 @@ document.getElementById("m_charisma").innerText=charisma;
 
 document.getElementById("actionsStats").innerHTML=`
 Энергия: ${energy}/${maxEnergy}<br>
-Уровень: ${getLevel()}<br>
-💪 ${strength} ⚡ ${agility} 🎭 ${charisma}
+Уровень: ${getLevel()}
 `;
 }
 
