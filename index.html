@@ -7,45 +7,21 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body{
-background:#0f172a;
-color:white;
-font-family:sans-serif;
-font-size:26px;
-}
-
-.container{
-max-width:500px;
-margin:auto;
-padding:20px;
-}
-
+body {background:#0f172a;color:white;font-family:sans-serif;font-size:22px;}
+.container{padding:15px;}
+.card{background:#1e293b;border-radius:15px;padding:20px;margin-bottom:15px;}
 button{
 width:100%;
-padding:25px;
-margin-top:15px;
-font-size:26px;
+padding:22px;
+font-size:24px;
+margin-top:12px;
 border:none;
-border-radius:15px;
+border-radius:14px;
 background:#22c55e;
 }
-
-.card{
-background:#1e293b;
-padding:20px;
-border-radius:15px;
-margin-bottom:15px;
-}
-
 .tab{display:none;}
 .active{display:block;}
-
-.log{
-background:black;
-padding:10px;
-height:150px;
-overflow:auto;
-}
+.log{background:#020617;padding:15px;height:150px;overflow:auto;}
 </style>
 
 </head>
@@ -59,6 +35,7 @@ overflow:auto;
 <div id="main" class="tab">
 
 <h1 id="username"></h1>
+<h2>Уровень: <span id="lvl"></span></h2>
 
 <div class="card">
 <h2 id="clan"></h2>
@@ -66,9 +43,9 @@ overflow:auto;
 </div>
 
 <div class="card">
-💪 Сила: <span id="strength"></span><br>
-⚡ Ловкость: <span id="agility"></span><br>
-🎭 Харизма: <span id="charisma"></span>
+💪 Сила: <b id="m_strength"></b><br>
+⚡ Ловкость: <b id="m_agility"></b><br>
+🎭 Харизма: <b id="m_charisma"></b>
 </div>
 
 <div class="card">
@@ -78,10 +55,9 @@ overflow:auto;
 </div>
 
 <button onclick="openTab('actions')">⚡ Действия</button>
-<button onclick="openAttack()">💣 Атака</button>
 <button onclick="showTop()">🏆 ТОП игроков</button>
 
-<button onclick="resetGame()" style="background:red">
+<button onclick="resetGame()" style="background:#ef4444;margin-top:30px;">
 Сбросить игру
 </button>
 
@@ -89,8 +65,24 @@ overflow:auto;
 
 <div id="actions" class="tab">
 
-<button onclick="mission()">🗡 Миссия (-2 энергия)</button>
-<button onclick="activity()">🎉 Активность (-1 энергия)</button>
+<h1>Действия</h1>
+
+<div id="actionsStats"></div>
+
+<button onclick="mission()">
+🗡 Миссия (-2 энергия)<br>
+<small>Даёт много очков, шанс от ловкости</small>
+</button>
+
+<button onclick="openAttack()">
+💣 Пакость (-5 энергия)<br>
+<small>Грабёж или атака района</small>
+</button>
+
+<button onclick="activity()">
+🎉 Активность (-1 энергия)<br>
+<small>Стабильный доход, шанс от харизмы</small>
+</button>
 
 <div class="log" id="actionsLog"></div>
 
@@ -99,7 +91,13 @@ overflow:auto;
 </div>
 
 <div id="attack" class="tab">
+
+<h1>💣 Атака</h1>
+
 <div id="attackUI"></div>
+
+<div class="log" id="attackLog"></div>
+
 </div>
 
 <div id="top" class="tab">
@@ -110,6 +108,5 @@ overflow:auto;
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
